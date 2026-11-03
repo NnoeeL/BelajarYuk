@@ -343,10 +343,12 @@
       assertEqual(s.properties.quiz.items.properties.answerIndex.type, 'INTEGER');
       const inst = prompts.buildSystemInstruction('id');
       assert(inst.includes('HANYA fakta dan informasi dari materi'), 'prompt wajib melarang halusinasi');
-      assert(inst.includes('jangan membatasi dengan angka maksimum tetap'), 'prompt tidak membatasi jumlah output');
+      assert(inst.includes('minimal 20 soal'), 'prompt meminta minimal 20 soal');
+      assert(inst.includes('buat lebih banyak'), 'prompt mendorong lebih dari 20 soal jika materi mendukung');
       assert(inst.includes('fakta/konsep yang sama'), 'prompt mencegah pengulangan soal');
       const userPrompt = prompts.buildUserPrompt({ title: 'Materi', materialText: 'Isi', options: { quiz: true } });
-      assert(userPrompt.includes('tanpa batas jumlah maksimum'), 'prompt pengguna tidak memberi batas maksimal soal');
+      assert(userPrompt.includes('minimal 20 soal'), 'prompt pengguna meminta minimal 20 soal');
+      assert(userPrompt.includes('tanpa batas maksimum tetap'), 'prompt pengguna tidak memberi batas maksimal soal');
       assert(userPrompt.includes('redaksi berbeda'), 'prompt pengguna meminta soal berbeda');
       assert(!s.properties.summary.properties.bullets.description.includes('4-8'), 'skema ringkasan tidak menetapkan batas maksimum');
     });
@@ -426,8 +428,18 @@
           },
           {
             options: { summary: false, flashcards: false, quiz: true },
-            payload: { quiz: Array.from({ length: 5 }, (_, i) => ({
-              question: i === 4 ? 'Pertanyaan 1' : `Pertanyaan ${i + 1}`,
+            payload: { quiz: Array.from({ length: 19 }, (_, i) => ({
+              question: `Pertanyaan ${i + 1}`,
+              options: ['A', 'B', 'C', 'D'],
+              answerIndex: 0,
+              explanation: 'Pembahasan.'
+            })) },
+            expectedError: 'kuis minimal 20 soal'
+          },
+          {
+            options: { summary: false, flashcards: false, quiz: true },
+            payload: { quiz: Array.from({ length: 20 }, (_, i) => ({
+              question: i === 19 ? 'Pertanyaan 1' : `Pertanyaan ${i + 1}`,
               options: ['A', 'B', 'C', 'D'],
               answerIndex: 0,
               explanation: 'Pembahasan.'
@@ -502,7 +514,7 @@
         assertEqual(request.body.response_format.json_schema.strict, true, 'skema Groq memakai mode strict');
         assertEqual(request.body.response_format.json_schema.schema.required.join(','), 'summary,flashcards,quiz', 'semua output yang dipilih wajib ada');
         assertEqual(result.quiz.length, 25, '25 soal yang berbeda dapat diproses');
-        assert(request.body.messages[1].content.includes('tanpa batas jumlah maksimum'), 'instruksi Groq tidak membatasi jumlah soal');
+        assert(request.body.messages[1].content.includes('minimal 20 soal'), 'instruksi Groq meminta minimal 20 soal');
 
         let videoError = '';
         try {
@@ -536,8 +548,14 @@
       });
       const cases = [
         {
-          quiz: [validQuestion('Apa itu konsep utama?'), validQuestion('Apa itu konsep utama!')],
+          quiz: Array.from({ length: 20 }, (_, i) => validQuestion(
+            i === 19 ? 'Apa itu konsep utama!' : i === 0 ? 'Apa itu konsep utama?' : `Pertanyaan ${i + 1}?`
+          )),
           expectedError: 'soal duplikat'
+        },
+        {
+          quiz: Array.from({ length: 19 }, (_, i) => validQuestion(`Pertanyaan ${i + 1}?`)),
+          expectedError: 'minimal 20 soal'
         }
       ];
 

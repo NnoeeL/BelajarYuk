@@ -1,5 +1,5 @@
 // BelajarYuk - Gemini and Groq API Clients (Single AI Network Boundary)
-import { LEARNING_PACKAGE_SCHEMA, buildGroqResponseSchema, buildSystemInstruction, buildUserPrompt } from './prompts.js';
+import { LEARNING_PACKAGE_SCHEMA, MIN_QUIZ_QUESTIONS, buildGroqResponseSchema, buildSystemInstruction, buildUserPrompt } from './prompts.js';
 import { MOCK_PACKAGES } from './mock-data.js';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -87,7 +87,10 @@ function validateGroqPayload(payload, options) {
 
   if (options.quiz !== false) {
     const quiz = payload?.quiz;
-    if (!Array.isArray(quiz) || quiz.length < 1 ||
+    if (!Array.isArray(quiz) || quiz.length < MIN_QUIZ_QUESTIONS) {
+      invalid(`kuis minimal ${MIN_QUIZ_QUESTIONS} soal`);
+    }
+    if (
         quiz.some(item => !hasText(item?.question) || !Array.isArray(item?.options) ||
           item.options.length !== 4 || item.options.some(option => !hasText(option)) ||
           !Number.isInteger(item?.answerIndex) || item.answerIndex < 0 || item.answerIndex > 3 ||
@@ -110,12 +113,14 @@ function validateQuizPayload(payload, options) {
   if (options.quiz === false) return;
 
   const quiz = payload?.quiz;
-  const hasValidQuestions = Array.isArray(quiz) &&
-    quiz.length >= 1 &&
-    quiz.every(item => typeof item?.question === 'string' && item.question.trim()) &&
-    !hasDuplicateQuizQuestions(quiz);
-  if (!hasValidQuestions) {
-    throw new Error('Hasil AI untuk kuis kosong atau memiliki soal duplikat. Coba buat ulang.');
+  if (!Array.isArray(quiz) || quiz.length < MIN_QUIZ_QUESTIONS) {
+    throw new Error(`Hasil AI untuk kuis harus berisi minimal ${MIN_QUIZ_QUESTIONS} soal. Coba buat ulang.`);
+  }
+  if (!quiz.every(item => typeof item?.question === 'string' && item.question.trim())) {
+    throw new Error('Hasil AI untuk kuis berisi pertanyaan yang kosong atau tidak valid. Coba buat ulang.');
+  }
+  if (hasDuplicateQuizQuestions(quiz)) {
+    throw new Error('Hasil AI untuk kuis memiliki soal duplikat. Coba buat ulang.');
   }
 }
 

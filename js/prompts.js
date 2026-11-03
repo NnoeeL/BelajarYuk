@@ -1,5 +1,7 @@
 // BelajarYuk - Prompts & Gemini JSON Schemas
 
+export const MIN_QUIZ_QUESTIONS = 20;
+
 export const LEARNING_PACKAGE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -126,9 +128,10 @@ export function buildSystemInstruction(language = 'id') {
     '3. Flashcard: buat pertanyaan singkat yang berfokus hanya pada satu konsep per kartu.',
     '4. Kuis: buat pertanyaan pilihan ganda dengan tepat 4 opsi jawaban, 1 indeks jawaban benar (0-3), dan pembahasan ringkas 1-2 kalimat berdasarkan materi.',
     '5. Video YouTube: jika materi memiliki video, cantumkan videoMoments HANYA jika yakin. Tulis approxTime dalam format menit:detik.',
-    '6. Ringkasan, istilah kunci, flashcard, dan kuis: tentukan jumlah berdasarkan materi; jangan membatasi dengan angka maksimum tetap dan jangan menambah keluaran yang tidak didukung materi.',
+    `6. Kuis: buat minimal ${MIN_QUIZ_QUESTIONS} soal. Jika materi mendukung lebih banyak, buat lebih banyak; gunakan hanya materi sumber dan jangan mengarang.`,
     '7. Kuis: jangan mengulang pertanyaan atau menguji fakta/konsep yang sama dengan redaksi berbeda. Cara bertanya boleh serupa selama konsep yang diuji berbeda.',
-    '8. Keluaran HARUS berupa objek JSON valid sesuai skema yang telah ditentukan.'
+    '8. Ringkasan, istilah kunci, dan flashcard: tentukan jumlah berdasarkan materi tanpa batas maksimum tetap.',
+    '9. Keluaran HARUS berupa objek JSON valid sesuai skema yang telah ditentukan.'
   ].join('\n');
 }
 
@@ -159,7 +162,7 @@ export function buildUserPrompt({ title, materialText, hasVideo, options = {} })
     parts.push('- Buat minimal 8 butir flashcard (satu konsep per kartu).');
   }
   if (options.quiz !== false) {
-    parts.push('- Buat soal pilihan ganda sebanyak yang didukung kedalaman materi, tanpa batas jumlah maksimum yang ditentukan. Gunakan 4 opsi dan pembahasan; jangan mengulang pertanyaan atau fakta/konsep yang sama dengan redaksi berbeda. Cara bertanya boleh serupa jika konsep yang diuji berbeda.');
+    parts.push(`- Buat minimal ${MIN_QUIZ_QUESTIONS} soal pilihan ganda; jika materi mendukung lebih banyak, buat lebih banyak tanpa batas maksimum tetap. Gunakan 4 opsi dan pembahasan. Jangan mengulang pertanyaan atau fakta/konsep yang sama dengan redaksi berbeda; cara bertanya boleh serupa jika konsep yang diuji berbeda. Gunakan hanya materi sumber, jangan mengarang.`);
   }
 
   return parts.join('\n');
