@@ -87,13 +87,35 @@ function validateGroqPayload(payload, options) {
 
   if (options.quiz !== false) {
     const quiz = payload?.quiz;
-    if (!Array.isArray(quiz) || quiz.length < 5 ||
+    if (!Array.isArray(quiz) || quiz.length < 1 ||
         quiz.some(item => !hasText(item?.question) || !Array.isArray(item?.options) ||
           item.options.length !== 4 || item.options.some(option => !hasText(option)) ||
           !Number.isInteger(item?.answerIndex) || item.answerIndex < 0 || item.answerIndex > 3 ||
-          !hasText(item.explanation))) {
+          !hasText(item.explanation)) || hasDuplicateQuizQuestions(quiz)) {
       invalid('kuis');
     }
+  }
+}
+
+function hasDuplicateQuizQuestions(quiz) {
+  const questions = quiz.map(item => item.question
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim());
+  return new Set(questions).size !== questions.length;
+}
+
+function validateQuizPayload(payload, options) {
+  if (options.quiz === false) return;
+
+  const quiz = payload?.quiz;
+  const hasValidQuestions = Array.isArray(quiz) &&
+    quiz.length >= 1 &&
+    quiz.every(item => typeof item?.question === 'string' && item.question.trim()) &&
+    !hasDuplicateQuizQuestions(quiz);
+  if (!hasValidQuestions) {
+    throw new Error('Hasil AI untuk kuis kosong atau memiliki soal duplikat. Coba buat ulang.');
   }
 }
 
@@ -315,11 +337,14 @@ export async function generateLearningPackage({
       throw new Error('Hasil AI tidak terbaca. Mencoba memperbaiki…');
     }
 
+    let parsed;
     try {
-      return parseAndRepairAiJson(textOut);
+      parsed = parseAndRepairAiJson(textOut);
     } catch (parseErr) {
       throw new Error('Hasil AI tidak terbaca. Mencoba memperbaiki…');
     }
+    validateQuizPayload(parsed, options);
+    return parsed;
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') {

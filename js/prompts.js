@@ -10,7 +10,7 @@ export const LEARNING_PACKAGE_SCHEMA = {
         bullets: {
           type: "ARRAY",
           items: { type: "STRING" },
-          description: "4-8 poin penting materi pembelajaran"
+          description: "Poin-poin penting materi pembelajaran"
         },
         keyTerms: {
           type: "ARRAY",
@@ -126,7 +126,9 @@ export function buildSystemInstruction(language = 'id') {
     '3. Flashcard: buat pertanyaan singkat yang berfokus hanya pada satu konsep per kartu.',
     '4. Kuis: buat pertanyaan pilihan ganda dengan tepat 4 opsi jawaban, 1 indeks jawaban benar (0-3), dan pembahasan ringkas 1-2 kalimat berdasarkan materi.',
     '5. Video YouTube: jika materi memiliki video, cantumkan videoMoments HANYA jika yakin. Tulis approxTime dalam format menit:detik.',
-    '6. Keluaran HARUS berupa objek JSON valid sesuai skema yang telah ditentukan.'
+    '6. Ringkasan, istilah kunci, flashcard, dan kuis: tentukan jumlah berdasarkan materi; jangan membatasi dengan angka maksimum tetap dan jangan menambah keluaran yang tidak didukung materi.',
+    '7. Kuis: jangan mengulang pertanyaan atau menguji fakta/konsep yang sama dengan redaksi berbeda. Cara bertanya boleh serupa selama konsep yang diuji berbeda.',
+    '8. Keluaran HARUS berupa objek JSON valid sesuai skema yang telah ditentukan.'
   ].join('\n');
 }
 
@@ -157,7 +159,7 @@ export function buildUserPrompt({ title, materialText, hasVideo, options = {} })
     parts.push('- Buat minimal 8 butir flashcard (satu konsep per kartu).');
   }
   if (options.quiz !== false) {
-    parts.push('- Buat minimal 5 butir soal kuis pilihan ganda dengan 4 opsi dan pembahasan.');
+    parts.push('- Buat soal pilihan ganda sebanyak yang didukung kedalaman materi, tanpa batas jumlah maksimum yang ditentukan. Gunakan 4 opsi dan pembahasan; jangan mengulang pertanyaan atau fakta/konsep yang sama dengan redaksi berbeda. Cara bertanya boleh serupa jika konsep yang diuji berbeda.');
   }
 
   return parts.join('\n');

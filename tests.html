@@ -27,6 +27,7 @@
     import * as prompts from './js/prompts.js';
     import * as gemini from './js/gemini.js';
     import * as quizView from './js/views/quiz.js';
+    import { renderQuizSetup } from './js/views/quiz-setup.js';
     import * as fileUpload from './js/views/file-upload.js';
     import { renderSettings } from './js/views/settings.js';
     import { renderDetail } from './js/views/detail.js';
@@ -342,6 +343,12 @@
       assertEqual(s.properties.quiz.items.properties.answerIndex.type, 'INTEGER');
       const inst = prompts.buildSystemInstruction('id');
       assert(inst.includes('HANYA fakta dan informasi dari materi'), 'prompt wajib melarang halusinasi');
+      assert(inst.includes('jangan membatasi dengan angka maksimum tetap'), 'prompt tidak membatasi jumlah output');
+      assert(inst.includes('fakta/konsep yang sama'), 'prompt mencegah pengulangan soal');
+      const userPrompt = prompts.buildUserPrompt({ title: 'Materi', materialText: 'Isi', options: { quiz: true } });
+      assert(userPrompt.includes('tanpa batas jumlah maksimum'), 'prompt pengguna tidak memberi batas maksimal soal');
+      assert(userPrompt.includes('redaksi berbeda'), 'prompt pengguna meminta soal berbeda');
+      assert(!s.properties.summary.properties.bullets.description.includes('4-8'), 'skema ringkasan tidak menetapkan batas maksimum');
     });
 
     it('prompts: skema Groq mengubah tipe menjadi JSON Schema strict dan mengikuti output terpilih', () => {
@@ -359,6 +366,25 @@
       assertEqual(quizView.formatQuizTime(0), '00:00');
       assertEqual(quizView.formatQuizTime(9), '00:09');
       assertEqual(quizView.formatQuizTime(125), '02:05');
+    });
+
+    it('quiz: jumlah soal yang dapat dipilih mengikuti semua soal yang tersedia', () => {
+      const container = document.createElement('div');
+      renderQuizSetup(container, {
+        id: 'paket-20-soal',
+        title: 'Materi',
+        quiz: Array.from({ length: 25 }, (_, i) => ({ question: `Soal ${i + 1}` }))
+      }, () => {});
+      assertEqual(container.querySelector('#quiz-question-count').max, '25', 'batas input mengikuti soal yang tersedia');
+      assertEqual(container.querySelector('#quiz-question-count').value, '25', 'jumlah bawaan mengikuti soal yang tersedia');
+      assert(container.textContent.includes('Tersedia 25 soal'), 'jumlah soal yang dapat dipilih ditampilkan');
+
+      renderQuizSetup(container, {
+        id: 'paket-8-soal',
+        title: 'Materi',
+        quiz: Array.from({ length: 8 }, (_, i) => ({ question: `Soal ${i + 1}` }))
+      }, () => {});
+      assertEqual(container.querySelector('#quiz-question-count').max, '8', 'jumlah yang tersedia tetap menjadi batas');
     });
 
     // --- Gemini Client & Error Tests (T-16) ---
@@ -397,7 +423,17 @@
             options: { summary: false, flashcards: false, quiz: true },
             payload: { quiz: [{ question: 'Soal?', options: ['A'], answerIndex: 0, explanation: '' }] },
             expectedError: 'kuis'
-          }
+          },
+          {
+            options: { summary: false, flashcards: false, quiz: true },
+            payload: { quiz: Array.from({ length: 5 }, (_, i) => ({
+              question: i === 4 ? 'Pertanyaan 1' : `Pertanyaan ${i + 1}`,
+              options: ['A', 'B', 'C', 'D'],
+              answerIndex: 0,
+              explanation: 'Pembahasan.'
+            })) },
+            expectedError: 'kuis'
+          },
         ];
 
         for (const testCase of cases) {
@@ -439,7 +475,7 @@
           back: `Penjelasan konsep ${i + 1}.`,
           tag: 'Materi'
         })),
-        quiz: Array.from({ length: 5 }, (_, i) => ({
+        quiz: Array.from({ length: 25 }, (_, i) => ({
           question: `Pertanyaan ${i + 1}?`,
           options: ['A', 'B', 'C', 'D'],
           answerIndex: 0,
@@ -465,6 +501,8 @@
         assertEqual(request.body.response_format.type, 'json_schema', 'respons memakai skema JSON');
         assertEqual(request.body.response_format.json_schema.strict, true, 'skema Groq memakai mode strict');
         assertEqual(request.body.response_format.json_schema.schema.required.join(','), 'summary,flashcards,quiz', 'semua output yang dipilih wajib ada');
+        assertEqual(result.quiz.length, 25, '25 soal yang berbeda dapat diproses');
+        assert(request.body.messages[1].content.includes('tanpa batas jumlah maksimum'), 'instruksi Groq tidak membatasi jumlah soal');
 
         let videoError = '';
         try {
@@ -486,6 +524,62 @@
       assert(gemini.mapGroqError(401).includes('API key Groq tidak valid'));
       assert(gemini.mapGroqError(429).includes('Batas penggunaan Groq'));
       assert(gemini.mapGroqError(0, 'Failed to fetch').includes('Periksa koneksi internet'));
+    });
+
+    it('gemini: menolak soal duplikat dan menerima lebih dari 20 soal berbeda', async () => {
+      const originalFetch = window.fetch;
+      const validQuestion = (question) => ({
+        question,
+        options: ['A', 'B', 'C', 'D'],
+        answerIndex: 0,
+        explanation: 'Pembahasan.'
+      });
+      const cases = [
+        {
+          quiz: [validQuestion('Apa itu konsep utama?'), validQuestion('Apa itu konsep utama!')],
+          expectedError: 'soal duplikat'
+        }
+      ];
+
+      try {
+        for (const testCase of cases) {
+          window.fetch = async () => ({
+            ok: true,
+            json: async () => ({
+              candidates: [{ content: { parts: [{ text: JSON.stringify({ quiz: testCase.quiz }) }] } }]
+            })
+          });
+          let errorMessage = '';
+          try {
+            await gemini.generateLearningPackage({
+              title: 'Uji Gemini',
+              materialText: 'Materi contoh.',
+              options: { summary: false, flashcards: false, quiz: true },
+              settings: { geminiApiKey: 'test-gemini-key' }
+            });
+          } catch (error) {
+            errorMessage = error.message;
+          }
+          assert(errorMessage.includes(testCase.expectedError), `Gemini harus menolak ${testCase.expectedError}`);
+        }
+
+        const manyQuestions = Array.from({ length: 25 }, (_, i) => validQuestion(`Pertanyaan ${i + 1}?`));
+        window.fetch = async () => ({
+          ok: true,
+          json: async () => ({
+            candidates: [{ content: { parts: [{ text: JSON.stringify({ quiz: manyQuestions }) }] } }]
+          })
+        });
+        const result = await gemini.generateLearningPackage({
+          title: 'Uji Gemini',
+          materialText: 'Materi contoh.',
+          options: { summary: false, flashcards: false, quiz: true },
+          settings: { geminiApiKey: 'test-gemini-key' }
+        });
+        assertEqual(result.quiz.length, 25, 'Gemini menerima lebih dari 20 soal unik');
+      } finally {
+        window.fetch = originalFetch;
+      }
     });
 
     // --- YouTube URL Validation (T-18) ---
