@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>BelajarYuk — Self Tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; max-width: 800px; margin: 0 auto; line-height: 1.4; }
+    h1 { font-size: 1.3rem; margin-bottom: 12px; }
+    .summary { font-size: 1rem; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-weight: 600; }
+    .summary.pass { background: #064e3b; color: #34d399; } .summary.fail { background: #450a0a; color: #f87171; }
+    .test-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .test-item { padding: 8px 12px; border-radius: 6px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .test-pass { border-left: 4px solid #34d399; } .test-fail { border-left: 4px solid #f87171; color: #fca5a5; }
+    .badge-pass { color: #34d399; font-weight: bold; } .badge-fail { color: #f87171; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Pemeriksaan Mandiri (Self Tests) — BelajarYuk</h1>
+  <div id="test-summary" class="summary">Menjalankan pengujian...</div>
+  <ul id="test-results" class="test-list"></ul>
+
+  <script type="module">
+    import * as stateStore from './js/state.js';
+    import * as storage from './js/storage.js';
+    import * as srs from './js/srs.js';
+    import * as extract from './js/extract.js';
+    import * as prompts from './js/prompts.js';
+    import * as gemini from './js/gemini.js';
+    import * as quizView from './js/views/quiz.js';
+    import * as fileUpload from './js/views/file-upload.js';
+    import { renderSettings } from './js/views/settings.js';
+    import { renderDetail } from './js/views/detail.js';
+    import { renderApiTutorial } from './js/views/api-tutorial.js';
+    import { isValidYouTubeUrl } from './js/views/create.js';
+
+    const resultsEl = document.getElementById('test-results');
+    const summaryEl = document.getElementById('test-summary');
+    let passed = 0;
+    let failed = 0;
+    const tests = [];
+
+    function it(name, fn) { tests.push({ name, fn }); }
+    function assert(cond, msg = 'Assertion failed') { if (!cond) throw new Error(msg); }
+    function assertEqual(act, exp, msg) { if (act !== exp) throw new Error(`${msg ? msg + ': ' : ''}Expected ${JSON.stringify(exp)} got ${JSON.stringify(act)}`); }
+
+    // --- State Tests (T-08) ---
+    it('state: get() & set() bekerja', () => {
+      stateStore.resetState();
+      assert(Array.isArray(stateStore.get().packages), 'packages array');
+      stateStore.set('theme', 'dark');
+      assertEqual(stateStore.get('theme'), 'dark', 'theme dark');
+      stateStore.set({ currentPackageId: 'pkg_123', theme: 'light' });
+      assertEqual(stateStore.get('currentPackageId'), 'pkg_123', 'pkg id terupdate');
+    });
+
+    it('state: subscribe() menerima notifikasi perubahan', () => {
+      stateStore.resetState();
+      let callCount = 0;
+      const unsub = stateStore.subscribe(() => { callCount++; });
+      stateStore.set('theme', 'dark');
+      assertEqual(callCount, 1, 'subscriber dipanggil 1 kali');
+      unsub();
+      stateStore.set('theme', 'light');
+      assertEqual(callCount, 1, 'tidak dipanggil lagi');
+    });
+
+    // --- Storage Tests (T-09) ---
+    it('storage: savePackage() & getPackageById() bekerja', async () => {
+      await storage.savePackage({ id: 'test_pkg_001', title: 'Paket Uji IDB', flashcards: [], quiz: [] });
+      const ret = await storage.getPackageById('test_pkg_001');
+      assert(ret && ret.title === 'Paket Uji IDB', 'paket harus tersimpan dan terbaca');
+    });
+
+    it('storage: getAllPackages() & deletePackage() bekerja', async () => {
+      await storage.deletePackage('test_pkg_001');
+      assertEqual(await storage.getPackageById('test_pkg_001'), null, 'paket harus null setelah dihapus');
+    });
+
+    it('storage: menandai fallback memori sebagai penyimpanan sementara', async () => {
+      const pkg = { id: 'temporary_storage_test', title: 'Paket Sementara', flashcards: [], quiz: [] };
+      const descriptor = Object.getOwnPropertyDescriptor(window, 'indexedDB');
+      try {
+        Object.defineProperty(window, 'indexedDB', { configurable: true, value: null });
+        assertEqual(await storage.savePackage(pkg), false, 'fallback memori bukan penyimpanan permanen');
+        assertEqual((await storage.getAllPackages()).some(item => item.id === pkg.id), true, 'paket sementara tetap tersedia di sesi ini');
+      } finally {
+        if (descriptor) Object.defineProperty(window, 'indexedDB', descriptor);
+        else delete window.indexedDB;
+        await storage.deletePackage(pkg.id);
+      }
+    });
+
+    it('storage: saveSettings() & getSettings() bekerja', () => {
+      storage.saveSettings({ apiKey: 'dummy_test_key_123', language: 'en' });
+      assertEqual(storage.getSettings().apiKey, 'dummy_test_key_123', 'key tersimpan');
+      storage.saveSettings({ apiKey: '', language: 'id' });
+    });
+
+    it('storage: pengaturan lama dimigrasikan ke kredensial Gemini', () => {
+      localStorage.setItem('belajaryuk_settings', JSON.stringify({
+        apiKey: 'legacy-gemini-key',
+        model: 'legacy-gemini-model'
+      }));
+      const settings = storage.getSettings();
+      assertEqual(settings.provider, 'gemini', 'provider bawaan');
+      assertEqual(settings.geminiApiKey, 'legacy-gemini-key', 'API key lama tetap terbaca');
+      assertEqual(settings.geminiModel, 'legacy-gemini-model', 'model lama tetap terbaca');
+      storage.saveSettings({ apiKey: '', model: 'gemini-3-flash-preview', geminiApiKey: '', geminiModel: 'gemini-3-flash-preview' });
+    });
+
+    it('storage: model Groq bawaan menggunakan model hemat terbaru', () => {
+      localStorage.setItem('belajaryuk_settings', JSON.stringify({
+        groqModel: 'llama-3.3-70b-versatile'
+      }));
+      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan lama diperbarui');
+      localStorage.setItem('belajaryuk_settings', JSON.stringify({
+        groqModel: 'llama-3.1-8b-instant'
+      }));
+      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model Groq yang dihentikan diperbarui');
+      localStorage.removeItem('belajaryuk_settings');
+      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan untuk pengaturan baru');
+    });
+
+    it('tutorial: pilihan membuka panel dengan transisi gulir dan zoom gambar berfungsi', async () => {
+      const container = document.createElement('div');
+      document.body.append(container);
+      renderApiTutorial(container);
+      const waitForAnimation = () => new Promise(resolve => setTimeout(resolve, 320));
+      assertEqual(container.querySelectorAll('.api-tutorial-choice').length, 3, 'panduan penggunaan, Gemini, dan Groq menjadi pilihan');
+      assertEqual(container.querySelectorAll('.api-tutorial-panel:not([hidden])').length, 0, 'semua panduan tertutup saat halaman dibuka');
+
+      const useChoice = container.querySelector('[data-tutorial-choice="use"]');
+      let scrolledPanel = null;
+      const usePanel = container.querySelector('#tutorial-use');
+      usePanel.scrollIntoView = function (options) { scrolledPanel = { panel: this, behavior: options.behavior }; };
+      useChoice.click();
+      assert(!usePanel.hidden && useChoice.getAttribute('aria-expanded') === 'true', 'panduan penggunaan dibuka dan diumumkan ke pembaca layar');
+      assert(usePanel.classList.contains('is-open'), 'panduan penggunaan terbuka dengan transisi ke bawah');
+      assert(!usePanel.inert && !usePanel.hasAttribute('aria-hidden'), 'konten yang terbuka dapat diakses');
+      assert(scrolledPanel?.panel === usePanel && scrolledPanel.behavior === 'smooth', 'halaman menggulir lembut ke panduan yang dibuka');
+      assertEqual(usePanel.querySelectorAll('.api-tutorial-step').length, 5, 'panduan penggunaan memiliki lima langkah');
+      assert(usePanel.textContent.includes('internet') && usePanel.textContent.includes('API key'), 'syarat koneksi dan API key dijelaskan');
+      assert(usePanel.textContent.includes('DOCX') && usePanel.textContent.includes('Mode Demo'), 'jenis materi dan Mode Demo dijelaskan');
+      assert(usePanel.textContent.includes('Cadangan'), 'panduan penyimpanan dan cadangan tersedia');
+      assert(usePanel.textContent.includes('data contoh') && usePanel.textContent.includes('API key dikosongkan'), 'screenshot penggunaan ditandai sebagai data contoh tanpa API key');
+      assertEqual(usePanel.querySelectorAll('.api-tutorial-zoom').length, 5, 'gambar halaman aplikasi dapat diperbesar');
+
+      const dialog = container.querySelector('.api-tutorial-dialog');
+      const zoomButton = usePanel.querySelector('.api-tutorial-zoom');
+      zoomButton.click();
+      assert(dialog.open && dialog.querySelector('img').getAttribute('src') === zoomButton.dataset.image, 'gambar terbuka dalam dialog');
+      dialog.querySelector('.api-tutorial-close').click();
+      assert(!dialog.open, 'dialog dapat ditutup dengan tombol');
+
+      const groqChoice = container.querySelector('[data-tutorial-choice="groq"]');
+      groqChoice.click();
+      const groqPanel = container.querySelector('#tutorial-groq');
+      assert(!groqPanel.hidden && groqPanel.inert === false, 'memilih Groq membuka panel tutorialnya');
+      assert(!usePanel.classList.contains('is-open') && usePanel.inert, 'memilih Groq mulai menutup panduan penggunaan');
+      await waitForAnimation();
+      assert(usePanel.hidden, 'panduan sebelumnya disembunyikan setelah transisi');
+      assertEqual(groqPanel.querySelectorAll('.api-tutorial-step').length, 4, 'empat langkah Groq ditampilkan');
+      assertEqual(groqPanel.querySelectorAll('.api-tutorial-zoom').length, 4, 'setiap screenshot Groq dapat diperbesar');
+      assert(groqPanel.textContent.includes('Garis merah menandai'), 'arti penanda screenshot API key dijelaskan');
+      assert(groqPanel.querySelector('a[href="https://console.groq.com/keys"]'), 'tautan Groq Console tersedia');
+      assert(groqPanel.querySelector('a[href="#/settings"]'), 'tutorial Groq menyediakan tautan Pengaturan');
+
+      const geminiChoice = container.querySelector('[data-tutorial-choice="gemini"]');
+      geminiChoice.click();
+      const geminiPanel = container.querySelector('#tutorial-gemini');
+      assert(!geminiPanel.hidden && !geminiPanel.inert, 'memilih Gemini membuka tutorialnya');
+      assert(groqPanel.inert && !groqPanel.classList.contains('is-open'), 'memilih Gemini mulai menutup tutorial Groq');
+      await waitForAnimation();
+      assert(groqPanel.hidden, 'tutorial Groq disembunyikan setelah transisi');
+      assertEqual(geminiPanel.querySelectorAll('.api-tutorial-step').length, 3, 'tiga langkah Gemini ditampilkan');
+      assertEqual(geminiPanel.querySelectorAll('.api-tutorial-zoom').length, 3, 'setiap screenshot Gemini dapat diperbesar');
+      assert(geminiPanel.querySelector('a[href="https://aistudio.google.com/apikey"]'), 'tautan API Keys Google AI Studio tersedia');
+      assert(geminiPanel.textContent.includes('Simpan API key di Pengaturan'), 'petunjuk menyimpan key tersedia');
+
+      geminiChoice.click();
+      await waitForAnimation();
+      assertEqual(container.querySelectorAll('.api-tutorial-panel:not([hidden])').length, 0, 'tutorial aktif dapat ditutup kembali');
+      container.remove();
+
+      const originalMatchMedia = window.matchMedia;
+      const reducedContainer = document.createElement('div');
+      document.body.append(reducedContainer);
+      try {
+        window.matchMedia = query => query.includes('prefers-reduced-motion')
+          ? { matches: true }
+          : originalMatchMedia(query);
+        renderApiTutorial(reducedContainer);
+        const reducedChoice = reducedContainer.querySelector('[data-tutorial-choice="use"]');
+        const reducedPanel = reducedContainer.querySelector('#tutorial-use');
+        reducedChoice.click();
+        reducedChoice.click();
+        assert(reducedPanel.hidden, 'mode pengurangan animasi menutup panel tanpa menunggu transisi');
+      } finally {
+        window.matchMedia = originalMatchMedia;
+        reducedContainer.remove();
+      }
+    });
+
+    it('settings: rekomendasi Gemini, profil sosial, dan lisensi tersedia', () => {
+      const container = document.createElement('div');
+      document.body.append(container);
+      renderSettings(container);
+      assert(container.textContent.includes('Rekomendasi untuk mulai: Gemini'), 'rekomendasi Gemini ditampilkan');
+      assert(container.querySelector('a[href="https://aistudio.google.com/apikey"]'), 'tautan API key Gemini tersedia');
+      const github = container.querySelector('a[href="https://github.com/NnoeeL"]');
+      assert(github?.querySelector('svg') && github.getAttribute('aria-label') === 'GitHub NnoeeL', 'logo GitHub memiliki tautan dan label aksesibel');
+      const instagram = container.querySelector('a[href="https://www.instagram.com/nnoelfr/"]');
+      assert(instagram?.querySelector('svg') && instagram.getAttribute('aria-label') === 'Instagram @nnoelfr', 'logo Instagram memiliki tautan dan label aksesibel');
+      const tiktok = container.querySelector('a[href="https://www.tiktok.com/@nno3el"]');
+      assert(tiktok?.querySelector('svg') && tiktok.getAttribute('aria-label') === 'TikTok @nno3el', 'logo TikTok memiliki tautan dan label aksesibel');
+      assert(container.querySelector('a[href="https://nnoeel.github.io/"]')?.textContent.trim() === 'Portofolio', 'tombol portofolio membuka alamat yang diberikan');
+      assertEqual(container.querySelector('.settings-about-copyright')?.textContent.trim(), '© 2026 Muhammad Farrel. BelajarYuk dilisensikan di bawah MIT.', 'copyright dan lisensi ditampilkan di Pengaturan');
+      assert(!container.querySelector('a[href="./LICENSE"]'), 'lisensi tidak membuka atau mengunduh berkas dari Pengaturan');
+      container.remove();
+    });
+
+    it('detail: memperingatkan paket yang hanya tersimpan sementara', async () => {
+      const pkg = {
+        id: 'temporary_notice_test',
+        title: 'Paket Sementara',
+        createdAt: new Date().toISOString(),
+        language: 'id',
+        summary: { title: 'Ringkasan', bullets: [] },
+        flashcards: [],
+        quiz: []
+      };
+      await storage.savePackage(pkg);
+      const container = document.createElement('div');
+      document.body.append(container);
+      await renderDetail(container, { id: pkg.id, temporary: '1' });
+      assert(container.textContent.includes('tidak dapat menyimpan paket ini secara permanen'), 'peringatan penyimpanan sementara ditampilkan');
+      await storage.deletePackage(pkg.id);
+      container.remove();
+    });
+
+    // --- SRS Leitner Tests (T-11) ---
+    it('srs: jawaban "Ingat" naik kotak & "Belum" turun ke 1', () => {
+      const base = new Date('2026-11-02T10:00:00Z');
+      assertEqual(srs.calculateNextReview(1, true, base).box, 2);
+      assertEqual(srs.calculateNextReview(5, true, base).box, 5);
+      assertEqual(srs.calculateNextReview(4, false, base).box, 1);
+    });
+
+    it('srs: jadwal dueAt & isDue() bekerja', () => {
+      const base = new Date('2026-11-02T10:00:00Z');
+      assertEqual(srs.calculateNextReview(1, false, base).dueAt, '2026-11-03');
+      assertEqual(srs.calculateNextReview(1, true, base).dueAt, '2026-11-04');
+      const today = new Date('2026-11-05');
+      assert(srs.isDue({ dueAt: '2026-11-04' }, today) && !srs.isDue({ dueAt: '2026-11-06' }, today));
+    });
+
+    // --- Extract Tests (T-14) ---
+    it('extract: membaca teks dari file TXT dan Markdown', async () => {
+      const txtFile = new File(['Catatan kuliah anatomi tubuh.'], 'catatan.txt', { type: 'text/plain' });
+      const mdFile = new File(['# Bab 1\nMateri Pengantar.'], 'modul.md', { type: 'text/markdown' });
+
+      const resTxt = await extract.extractFileContent(txtFile);
+      assertEqual(resTxt.text, 'Catatan kuliah anatomi tubuh.', 'teks txt harus terbaca');
+
+      const resMd = await extract.extractFileContent(mdFile);
+      assert(resMd.text.includes('Materi Pengantar.'), 'teks md harus terbaca');
+    });
+
+    it('extract: menggabungkan hingga 5 berkas dan menolak berkas keenam', async () => {
+      const files = [
+        new File(['Materi pertama.'], 'materi-1.txt'),
+        new File(['txt'], 'catatan.txt'),
+        new File(['Materi ketiga.'], 'materi-3.md'),
+        new File(['Materi keempat.'], 'materi-4.txt'),
+        new File(['Materi kelima.'], 'materi-5.txt')
+      ];
+      const progress = [];
+      const result = await fileUpload.extractSelectedFiles(files, status => progress.push(status));
+      assertEqual(result.sources.length, 5, 'lima berkas diterima');
+      assert(result.text.includes('Materi pertama.') && result.text.includes('Materi kelima.'), 'teks dari seluruh berkas digabung');
+      assertEqual(progress.length, 5, 'status pembacaan ditampilkan untuk setiap berkas');
+
+      let tooManyFilesError = '';
+      try {
+        extract.validateUploadFiles([...files, new File(['tambahan'], 'tambahan.txt')]);
+      } catch (error) {
+        tooManyFilesError = error.message;
+      }
+      assert(tooManyFilesError.includes('Maksimal 5 berkas'), 'berkas keenam harus ditolak dengan pesan jelas');
+    });
+
+    it('extract: membaca teks DOCX dan menolak format DOC lama', async () => {
+      const originalMammoth = window.mammoth;
+      window.mammoth = {
+        extractRawText: async ({ arrayBuffer }) => {
+          assert(arrayBuffer instanceof ArrayBuffer, 'DOCX harus dibaca sebagai ArrayBuffer');
+          return { value: 'Materi DOCX untuk kuliah.' };
+        }
+      };
+
+      try {
+        const docxFile = new File(['mock-docx'], 'materi.docx', {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+        const result = await extract.extractFileContent(docxFile);
+        assertEqual(result.text, 'Materi DOCX untuk kuliah.', 'teks DOCX harus terbaca');
+        assertEqual(result.charCount, result.text.length, 'jumlah karakter DOCX');
+
+        let legacyDocError = '';
+        try {
+          await extract.extractFileContent(new File(['mock-doc'], 'materi.doc'));
+        } catch (err) {
+          legacyDocError = err.message;
+        }
+        assert(legacyDocError.includes('atau .docx'), 'format DOC lama harus ditolak dengan pesan format didukung');
+      } finally {
+        if (originalMammoth) window.mammoth = originalMammoth;
+        else delete window.mammoth;
+      }
+    });
+
+    it('extract: membaca teks dari PDF dan mendeteksi PDF gambar/scan', async () => {
+      const toBuf = (s) => new TextEncoder().encode(s).buffer;
+      const pdfText = `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj\n4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n5 0 obj<</Length 35>>stream\nBT /F1 12 Tf 50 700 Td (Halo Farmakologi) Tj ET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\n0000000212 00000 n\n0000000280 00000 n\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n360\n%%EOF`;
+      const resPdf = await extract.extractTextFromPdfBuffer(toBuf(pdfText));
+      assert(resPdf.text.includes('Halo Farmakologi'), 'PDF berteks diekstrak');
+
+      const emptyPdf = `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 5 0 R>>endobj\n4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n5 0 obj<</Length 0>>stream\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\n0000000180 00000 n\n0000000248 00000 n\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n320\n%%EOF`;
+      let scanErr = null;
+      try { await extract.extractTextFromPdfBuffer(toBuf(emptyPdf)); } catch (err) { scanErr = err.message; }
+      assert(scanErr && scanErr.includes('PDF berupa gambar atau hasil scan'), 'deteksi PDF scan');
+    });
+
+    // --- Prompts & Schema Tests (T-15) ---
+    it('prompts: skema JSON cocok dengan struktur data bagian 7', () => {
+      const s = prompts.LEARNING_PACKAGE_SCHEMA;
+      assertEqual(s.type, 'OBJECT');
+      assert(s.properties.summary && s.properties.flashcards && s.properties.quiz, 'skema wajib memuat summary, flashcards, quiz');
+      assertEqual(s.properties.summary.properties.bullets.type, 'ARRAY');
+      assertEqual(s.properties.flashcards.items.properties.front.type, 'STRING');
+      assertEqual(s.properties.quiz.items.properties.options.type, 'ARRAY');
+      assertEqual(s.properties.quiz.items.properties.answerIndex.type, 'INTEGER');
+      const inst = prompts.buildSystemInstruction('id');
+      assert(inst.includes('HANYA fakta dan informasi dari materi'), 'prompt wajib melarang halusinasi');
+    });
+
+    it('prompts: skema Groq mengubah tipe menjadi JSON Schema strict dan mengikuti output terpilih', () => {
+      const schema = prompts.buildGroqResponseSchema({ summary: true, flashcards: false, quiz: false });
+      assertEqual(schema.type, 'object');
+      assertEqual(schema.required.join(','), 'summary');
+      assertEqual(schema.additionalProperties, false);
+      assertEqual(schema.properties.summary.type, 'object');
+      assertEqual(schema.properties.summary.properties.bullets.items.type, 'string');
+      assertEqual(schema.properties.summary.required.join(','), 'title,bullets,keyTerms,videoMoments');
+      assertEqual(schema.properties.summary.additionalProperties, false);
+    });
+
+    it('quiz: format timer menampilkan menit dan detik dengan dua digit', () => {
+      assertEqual(quizView.formatQuizTime(0), '00:00');
+      assertEqual(quizView.formatQuizTime(9), '00:09');
+      assertEqual(quizView.formatQuizTime(125), '02:05');
+    });
+
+    // --- Gemini Client & Error Tests (T-16) ---
+    it('gemini: Mode Demo menghasilkan output tanpa memanggil API', async () => {
+      const res = await gemini.generateLearningPackage({
+        title: 'Uji Demo', materialText: 'Materi tes', settings: { isDemoMode: true }
+      });
+      assert(res.summary && res.flashcards && res.quiz, 'hasil demo harus lengkap');
+      assert(res.flashcards.length >= 8, 'demo flashcards >= 8');
+    });
+
+    it('gemini: mapGeminiError() memetakan status HTTP ke pesan ramah bahasa Indonesia', () => {
+      assert(gemini.mapGeminiError(400).includes('Permintaan ditolak'));
+      assert(gemini.mapGeminiError(401).includes('API key tidak valid'));
+      assert(gemini.mapGeminiError(403).includes('API key tidak valid'));
+      assert(gemini.mapGeminiError(429).includes('Kuota harian/menit habis'));
+      assert(gemini.mapGeminiError(500).includes('Layanan sedang bermasalah'));
+      assert(gemini.mapGeminiError(400, 'Video is private').includes('Video ini tidak bisa dibaca'));
+    });
+
+    it('groq: menolak respons kosong atau tidak lengkap untuk setiap bagian terpilih', async () => {
+      const originalFetch = window.fetch;
+      try {
+        const cases = [
+          {
+            options: { summary: true, flashcards: false, quiz: false },
+            payload: { summary: { title: '', bullets: [], keyTerms: [] } },
+            expectedError: 'ringkasan materi'
+          },
+          {
+            options: { summary: false, flashcards: true, quiz: false },
+            payload: { flashcards: [{ front: '', back: '', tag: '' }] },
+            expectedError: 'flashcard'
+          },
+          {
+            options: { summary: false, flashcards: false, quiz: true },
+            payload: { quiz: [{ question: 'Soal?', options: ['A'], answerIndex: 0, explanation: '' }] },
+            expectedError: 'kuis'
+          }
+        ];
+
+        for (const testCase of cases) {
+          window.fetch = async () => ({
+            ok: true,
+            json: async () => ({
+              choices: [{ message: { content: JSON.stringify(testCase.payload) } }]
+            })
+          });
+          let errorMessage = '';
+          try {
+            await gemini.generateLearningPackage({
+              title: 'Uji Groq',
+              materialText: 'Materi contoh.',
+              options: testCase.options,
+              settings: { provider: 'groq', groqApiKey: 'test-groq-key', language: 'id' }
+            });
+          } catch (error) {
+            errorMessage = error.message;
+          }
+          assert(errorMessage.includes(testCase.expectedError), `${testCase.expectedError} yang tidak lengkap harus menghasilkan error`);
+        }
+      } finally {
+        window.fetch = originalFetch;
+      }
+    });
+
+    it('groq: mengirim permintaan teks JSON dengan model dan key pilihan', async () => {
+      const originalFetch = window.fetch;
+      const expected = {
+        summary: {
+          title: 'Materi Groq',
+          bullets: ['Poin satu.', 'Poin dua.', 'Poin tiga.', 'Poin empat.'],
+          keyTerms: [{ term: 'Konsep', meaning: 'Penjelasan konsep.' }],
+          videoMoments: []
+        },
+        flashcards: Array.from({ length: 8 }, (_, i) => ({
+          front: `Apa konsep ${i + 1}?`,
+          back: `Penjelasan konsep ${i + 1}.`,
+          tag: 'Materi'
+        })),
+        quiz: Array.from({ length: 5 }, (_, i) => ({
+          question: `Pertanyaan ${i + 1}?`,
+          options: ['A', 'B', 'C', 'D'],
+          answerIndex: 0,
+          explanation: 'Pembahasan dari materi.'
+        }))
+      };
+      let request;
+      window.fetch = async (url, options) => {
+        request = { url, options, body: JSON.parse(options.body) };
+        return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(expected) } }] }) };
+      };
+
+      try {
+        const result = await gemini.generateLearningPackage({
+          title: 'Uji Groq',
+          materialText: 'Materi contoh.',
+          settings: { provider: 'groq', groqApiKey: 'test-groq-key', groqModel: 'test-model', language: 'id' }
+        });
+        assertEqual(result.summary.title, 'Materi Groq', 'hasil JSON Groq diproses');
+        assertEqual(request.url, 'https://api.groq.com/openai/v1/chat/completions', 'endpoint Groq');
+        assertEqual(request.options.headers.Authorization, 'Bearer test-groq-key', 'key dikirim di header');
+        assertEqual(request.body.model, 'test-model', 'model Groq yang dipilih');
+        assertEqual(request.body.response_format.type, 'json_schema', 'respons memakai skema JSON');
+        assertEqual(request.body.response_format.json_schema.strict, true, 'skema Groq memakai mode strict');
+        assertEqual(request.body.response_format.json_schema.schema.required.join(','), 'summary,flashcards,quiz', 'semua output yang dipilih wajib ada');
+
+        let videoError = '';
+        try {
+          await gemini.generateLearningPackage({
+            title: 'Uji Video',
+            youtubeUrls: ['https://youtu.be/dQw4w9WgXcQ'],
+            settings: { provider: 'groq', groqApiKey: 'test-groq-key' }
+          });
+        } catch (error) {
+          videoError = error.message;
+        }
+        assert(videoError.includes('pilih Gemini'), 'link YouTube ditolak secara jelas pada Groq');
+      } finally {
+        window.fetch = originalFetch;
+      }
+    });
+
+    it('groq: memetakan error key dan batas penggunaan', () => {
+      assert(gemini.mapGroqError(401).includes('API key Groq tidak valid'));
+      assert(gemini.mapGroqError(429).includes('Batas penggunaan Groq'));
+      assert(gemini.mapGroqError(0, 'Failed to fetch').includes('Periksa koneksi internet'));
+    });
+
+    // --- YouTube URL Validation (T-18) ---
+    it('youtube: validasi URL mendukung format watch?v=, youtu.be, shorts', () => {
+      assert(isValidYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'watch?v= harus valid');
+      assert(isValidYouTubeUrl('https://youtu.be/dQw4w9WgXcQ'), 'youtu.be harus valid');
+      assert(isValidYouTubeUrl('https://www.youtube.com/shorts/dQw4w9WgXcQ'), 'shorts harus valid');
+      assert(!isValidYouTubeUrl('https://vimeo.com/123456'), 'vimeo harus tidak valid');
+      assert(!isValidYouTubeUrl('https://google.com'), 'google harus tidak valid');
+      assert(!isValidYouTubeUrl(''), 'string kosong harus tidak valid');
+    });
+
+    // --- JSON Repair Tests (T-19) ---
+    it('gemini: parseAndRepairAiJson() memperbaiki markdown fence dan kurung unclosed', () => {
+      const fenced = '```json\n{"summary":{"title":"Fisiologi","bullets":["Poin 1"],"keyTerms":[]},"flashcards":[],"quiz":[]}\n```';
+      const r1 = gemini.parseAndRepairAiJson(fenced);
+      assertEqual(r1.summary.title, 'Fisiologi', 'markdown fence harus terkelupas');
+
+      const unclosed = '{"summary":{"title":"Farmasi","bullets":["Poin A"]},"flashcards":[],"quiz":[]';
+      const r2 = gemini.parseAndRepairAiJson(unclosed);
+      assertEqual(r2.summary.title, 'Farmasi', 'unclosed brace harus diperbaiki');
+
+      let brokenErr = null;
+      try { gemini.parseAndRepairAiJson('bukan json rusak parah'); } catch (e) { brokenErr = e.message; }
+      assert(brokenErr && brokenErr.includes('Hasil AI tidak terbaca'), 'json rusak harus memicu error ramah');
+    });
+
+    // Run tests
+    async function runTests() {
+      for (const t of tests) {
+        const li = document.createElement('li');
+        try {
+          await t.fn();
+          passed++;
+          li.className = 'test-item test-pass';
+          li.innerHTML = `<span>✓ ${t.name}</span><span class="badge-pass">PASS</span>`;
+        } catch (err) {
+          failed++;
+          li.className = 'test-item test-fail';
+          li.innerHTML = `<span>✗ ${t.name} (${err.message})</span><span class="badge-fail">FAIL</span>`;
+          console.error(t.name, err);
+        }
+        resultsEl.appendChild(li);
+      }
+      summaryEl.className = failed === 0 ? 'summary pass' : 'summary fail';
+      summaryEl.textContent = `${passed} berhasil, ${failed} gagal dari total ${tests.length} uji.`;
+      window.__testResults = { passed, failed, total: tests.length };
+    }
+    runTests();
+  </script>
+</body>
+</html>

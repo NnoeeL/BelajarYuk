@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#38bdf8">
+  <meta name="description" content="Ubah materi kuliah jadi ringkasan, flashcard, dan kuis otomatis.">
+  <title>BelajarYuk</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <!-- Anime Pastel Seaside Scenic Background (Pantai Pesisir Cerah) -->
+  <div class="seaside-bg" aria-hidden="true">
+    <div class="seaside-sun"></div>
+    <div class="seaside-cloud cloud-1"></div>
+    <div class="seaside-cloud cloud-2"></div>
+    <svg class="seaside-gull gull-1" viewBox="0 0 32 16"><path d="M1,14 Q8,2 16,10 Q24,2 31,14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <svg class="seaside-gull gull-2" viewBox="0 0 32 16"><path d="M1,14 Q8,2 16,10 Q24,2 31,14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+
+    <!-- Floating Study & Campus Elements (Topi Wisuda, Buku, Pensil, Simbol Kampus) -->
+    <div class="study-decor decor-cap" title="Topi Wisuda">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
+      </svg>
+    </div>
+    <div class="study-decor decor-book" title="Buku Belajar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+    </div>
+    <div class="study-decor decor-pencil" title="Pensil Mahasiswa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+      </svg>
+    </div>
+    <div class="study-decor decor-campus" title="Pilar Akademik Kampus">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="21" x2="22" y2="21"></line>
+        <line x1="4" y1="18" x2="20" y2="18"></line>
+        <line x1="6" y1="18" x2="6" y2="10"></line>
+        <line x1="10" y1="18" x2="10" y2="10"></line>
+        <line x1="14" y1="18" x2="14" y2="10"></line>
+        <line x1="18" y1="18" x2="18" y2="10"></line>
+        <polygon points="12 2 2 7 22 7"></polygon>
+      </svg>
+    </div>
+    <div class="study-decor decor-diploma" title="Gulungan Ijazah">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+    </div>
+
+    <svg class="seaside-waves" viewBox="0 0 1440 380" preserveAspectRatio="none">
+      <path class="wave-layer wave-ocean" d="M0,130 C240,190 480,80 720,140 C960,200 1200,90 1440,130 L1440,380 L0,380 Z"></path>
+      <path class="wave-layer wave-tide" d="M0,180 C260,110 500,230 760,170 C1020,110 1240,210 1440,170 L1440,380 L0,380 Z"></path>
+      <path class="wave-layer wave-foam" d="M0,230 C220,190 440,270 700,230 C960,190 1200,260 1440,220 L1440,380 L0,380 Z"></path>
+      <path class="wave-layer wave-sand" d="M0,280 C280,250 560,310 840,270 C1120,230 1320,290 1440,280 L1440,380 L0,380 Z"></path>
+    </svg>
+    <div class="sakura-drift">
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+      <svg class="sakura-petal" viewBox="0 0 24 24"><path d="M12 2C8.7 4.7 4.3 8.9 3.5 13.5c-.7 4.1 2.2 7.6 6 8 1.1.1 1.9-.5 2.5-1.5.6 1 1.4 1.6 2.5 1.5 3.8-.4 6.7-3.9 6-8C19.7 8.9 15.3 4.7 12 2Z"/><path d="M12 4c-1.3 4.2-1.7 9.5-.2 15.4" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width=".8" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell"></div>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
