@@ -19,7 +19,7 @@ const GROQ_STEPS = [
   },
   {
     title: 'Isi nama dan masa berlaku',
-    description: 'Isi nama yang mudah dikenali, misalnya BelajarYuk. Pilih masa berlaku sesuai kebutuhan, lalu tekan Submit.',
+    description: 'Isi nama yang mudah dikenali, misalnya ArsipBelajar. Pilih masa berlaku sesuai kebutuhan, lalu tekan Submit.',
     image: 'assets/tutorial/groq-04-buat-api-key.png',
     alt: 'Form pembuatan API key Groq untuk mengisi nama dan masa berlaku.'
   }
@@ -49,9 +49,9 @@ const GEMINI_STEPS = [
 const APP_GUIDE_STEPS = [
   {
     title: 'Siapkan koneksi dan API key',
-    description: 'Buka BelajarYuk melalui alamat website atau server lokal. Untuk membuat materi dengan AI, pastikan internet aktif, pilih Gemini atau Groq di Pengaturan, masukkan API key penyedia tersebut, lalu tekan Simpan Pengaturan. Mode Demo bisa dicoba tanpa key, tetapi memakai data contoh.',
+    description: 'Buka ArsipBelajar melalui alamat website atau server lokal. Untuk membuat materi dengan AI, pastikan internet aktif, pilih Gemini atau Groq di Pengaturan, masukkan API key penyedia tersebut, lalu tekan Simpan Pengaturan. Mode Demo bisa dicoba tanpa key, tetapi memakai data contoh.',
     image: 'assets/tutorial/app-settings.png',
-    alt: 'Halaman Pengaturan BelajarYuk untuk memilih penyedia AI dan memasukkan API key.'
+    alt: 'Halaman Pengaturan ArsipBelajar untuk memilih penyedia AI dan memasukkan API key.'
   },
   {
     title: 'Masukkan materi dan pilih hasil',
@@ -63,7 +63,7 @@ const APP_GUIDE_STEPS = [
     title: 'Pelajari ringkasan dan flashcard',
     description: 'Setelah pemrosesan selesai, paket terbuka pada halaman detail. Baca ringkasan atau buka tab Flashcard. Ketuk kartu untuk melihat jawabannya, lalu tandai apakah kamu sudah ingat agar jadwal ulas kartu diperbarui.',
     image: 'assets/tutorial/app-detail.png',
-    alt: 'Halaman detail paket BelajarYuk dengan ringkasan materi dan tab belajar.'
+    alt: 'Halaman detail paket ArsipBelajar dengan ringkasan materi dan tab belajar.'
   },
   {
     title: 'Atur dan kerjakan kuis',
@@ -75,7 +75,7 @@ const APP_GUIDE_STEPS = [
     title: 'Simpan data dan buat cadangan',
     description: 'Paket belajar tersimpan di browser perangkat ini dan biasanya tetap ada setelah halaman dimuat ulang. Data tidak tersinkron ke perangkat lain dan dapat hilang jika data situs browser dihapus. Buka Pengaturan, pilih bagian Cadangan & Ekspor Data, tekan Unduh Semua Paket (JSON), lalu simpan berkas cadangan di tempat lain.',
     image: 'assets/tutorial/app-backup.png',
-    alt: 'Bagian Cadangan dan Ekspor Data di Pengaturan BelajarYuk.'
+    alt: 'Bagian Cadangan dan Ekspor Data di Pengaturan ArsipBelajar.'
   }
 ];
 
@@ -116,7 +116,7 @@ function renderProviderPanel(provider, title, description, url, linkLabel, steps
         <section class="api-tutorial-paste" aria-labelledby="paste-${provider}-title">
           <div>
             <h2 id="paste-${provider}-title">Simpan API key di Pengaturan</h2>
-            <p>Salin key yang baru dibuat. Kembali ke BelajarYuk, pilih ${title} sebagai penyedia, tempel key, lalu tekan Simpan Pengaturan.</p>
+            <p>Salin key yang baru dibuat. Kembali ke ArsipBelajar, pilih ${title} sebagai penyedia, tempel key, lalu tekan Simpan Pengaturan.</p>
             <p class="form-hint">Jangan bagikan API key atau tangkapan layar yang menampilkannya.</p>
           </div>
           <a href="#/settings" class="btn btn-secondary">Buka Pengaturan</a>
@@ -131,7 +131,7 @@ export function renderApiTutorial(container) {
     <div class="view-container api-tutorial">
       <header class="view-header">
         <a href="#/settings" class="btn-back">Kembali ke Pengaturan</a>
-        <h1 class="view-title">Panduan BelajarYuk</h1>
+        <h1 class="view-title">Panduan ArsipBelajar</h1>
         <p class="view-subtitle">Pilih panduan yang kamu perlukan. Konten hanya dibuka setelah kamu memilihnya.</p>
       </header>
 
@@ -153,11 +153,11 @@ export function renderApiTutorial(container) {
       <section class="api-tutorial-panel" id="tutorial-use" aria-labelledby="tutorial-use-title" hidden>
         <div class="api-tutorial-panel-inner">
           <header class="api-tutorial-guide-intro">
-            <h2 id="tutorial-use-title">Cara menggunakan BelajarYuk</h2>
+            <h2 id="tutorial-use-title">Cara menggunakan ArsipBelajar</h2>
             <p>Untuk membuat bahan belajar dengan AI, siapkan koneksi internet dan API key Gemini atau Groq. Jika belum punya key, pilih salah satu tutorial API key di atas. Mode Demo dapat dicoba tanpa key, tetapi hasilnya berupa data contoh.</p>
             <p>Gunakan browser modern dan buka aplikasi melalui website atau server lokal, bukan dengan membuka berkas HTML langsung. AI memerlukan koneksi internet saat membuat paket.</p>
           </header>
-          ${renderSteps(APP_GUIDE_STEPS, 'Langkah menggunakan BelajarYuk', 'Cuplikan layar aplikasi dengan data contoh; kolom API key dikosongkan. Pilih gambar untuk memperbesar.')}
+          ${renderSteps(APP_GUIDE_STEPS, 'Langkah menggunakan ArsipBelajar', 'Cuplikan layar aplikasi dengan data contoh; kolom API key dikosongkan. Pilih gambar untuk memperbesar.')}
         </div>
       </section>
 

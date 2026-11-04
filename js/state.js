@@ -1,4 +1,4 @@
-// BelajarYuk - State Management (Simple Store with get/set/subscribe)
+// ArsipBelajar - State Management (Simple Store with get/set/subscribe)
 
 const DEFAULT_STATE = {
   packages: [],

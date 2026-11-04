@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>BelajarYuk — Self Tests</title>
+  <title>ArsipBelajar | Self Tests</title>
   <style>
     body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; max-width: 800px; margin: 0 auto; line-height: 1.4; }
     h1 { font-size: 1.3rem; margin-bottom: 12px; }
@@ -15,23 +15,31 @@
   </style>
 </head>
 <body>
-  <h1>Pemeriksaan Mandiri (Self Tests) — BelajarYuk</h1>
+  <h1>Pemeriksaan Mandiri (Self Tests) ArsipBelajar</h1>
   <div id="test-summary" class="summary">Menjalankan pengujian...</div>
   <ul id="test-results" class="test-list"></ul>
 
   <script type="module">
     import * as stateStore from './js/state.js';
     import * as storage from './js/storage.js';
+    import { migrateLegacyLocalStorage } from './js/storage-migration.js';
     import * as srs from './js/srs.js';
     import * as extract from './js/extract.js';
     import * as prompts from './js/prompts.js';
     import * as gemini from './js/gemini.js';
+    import { AI_MODEL, callAI, selectMaterialContext } from './js/material-chat-ai.js';
+    import { renderMaterialChat } from './js/views/material-chat.js';
     import * as quizView from './js/views/quiz.js';
     import { renderQuizSetup } from './js/views/quiz-setup.js';
     import * as fileUpload from './js/views/file-upload.js';
     import { renderSettings } from './js/views/settings.js';
     import { renderDetail } from './js/views/detail.js';
     import { renderApiTutorial } from './js/views/api-tutorial.js';
+    import {
+      getNameOnboardingStatus, getUserName, getUserNameInstruction,
+      removeUserName, saveUserName, sanitizeUserName, skipNameOnboarding
+    } from './js/user-profile.js';
+    import { mountNameOnboarding } from './js/name-onboarding.js';
     import { isValidYouTubeUrl } from './js/views/create.js';
 
     const resultsEl = document.getElementById('test-results');
@@ -92,34 +100,165 @@
     });
 
     it('storage: saveSettings() & getSettings() bekerja', () => {
-      storage.saveSettings({ apiKey: 'dummy_test_key_123', language: 'en' });
-      assertEqual(storage.getSettings().apiKey, 'dummy_test_key_123', 'key tersimpan');
-      storage.saveSettings({ apiKey: '', language: 'id' });
+      const previous = localStorage.getItem('arsipbelajar_settings');
+      try {
+        storage.saveSettings({ apiKey: 'dummy_test_key_123', language: 'en' });
+        assertEqual(storage.getSettings().apiKey, 'dummy_test_key_123', 'key tersimpan');
+        storage.saveSettings({ apiKey: '', language: 'id' });
+      } finally {
+        if (previous === null) localStorage.removeItem('arsipbelajar_settings');
+        else localStorage.setItem('arsipbelajar_settings', previous);
+      }
     });
 
     it('storage: pengaturan lama dimigrasikan ke kredensial Gemini', () => {
-      localStorage.setItem('belajaryuk_settings', JSON.stringify({
-        apiKey: 'legacy-gemini-key',
-        model: 'legacy-gemini-model'
-      }));
-      const settings = storage.getSettings();
-      assertEqual(settings.provider, 'gemini', 'provider bawaan');
-      assertEqual(settings.geminiApiKey, 'legacy-gemini-key', 'API key lama tetap terbaca');
-      assertEqual(settings.geminiModel, 'legacy-gemini-model', 'model lama tetap terbaca');
-      storage.saveSettings({ apiKey: '', model: 'gemini-3-flash-preview', geminiApiKey: '', geminiModel: 'gemini-3-flash-preview' });
+      const keys = ['belajaryuk_settings', 'arsipbelajar_settings'];
+      const previous = new Map(keys.map(key => [key, localStorage.getItem(key)]));
+      try {
+        keys.forEach(key => localStorage.removeItem(key));
+        localStorage.setItem('belajaryuk_settings', JSON.stringify({
+          apiKey: 'legacy-gemini-key',
+          model: 'legacy-gemini-model'
+        }));
+        assertEqual(migrateLegacyLocalStorage(), true, 'migrasi penyimpanan lama berhasil');
+        const settings = storage.getSettings();
+        assertEqual(settings.provider, 'gemini', 'provider bawaan');
+        assertEqual(settings.geminiApiKey, 'legacy-gemini-key', 'API key lama tetap terbaca');
+        assertEqual(settings.geminiModel, 'legacy-gemini-model', 'model lama tetap terbaca');
+        assertEqual(localStorage.getItem('belajaryuk_settings'), null, 'key pengaturan lama dihapus setelah dipindahkan');
+        assert(localStorage.getItem('arsipbelajar_settings'), 'key pengaturan memakai awalan baru');
+      } finally {
+        keys.forEach(key => {
+          const value = previous.get(key);
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        });
+      }
     });
 
     it('storage: model Groq bawaan menggunakan model hemat terbaru', () => {
-      localStorage.setItem('belajaryuk_settings', JSON.stringify({
-        groqModel: 'llama-3.3-70b-versatile'
-      }));
-      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan lama diperbarui');
-      localStorage.setItem('belajaryuk_settings', JSON.stringify({
-        groqModel: 'llama-3.1-8b-instant'
-      }));
-      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model Groq yang dihentikan diperbarui');
-      localStorage.removeItem('belajaryuk_settings');
-      assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan untuk pengaturan baru');
+      const previous = localStorage.getItem('arsipbelajar_settings');
+      try {
+        localStorage.setItem('arsipbelajar_settings', JSON.stringify({
+          groqModel: 'llama-3.3-70b-versatile'
+        }));
+        assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan lama diperbarui');
+        localStorage.setItem('arsipbelajar_settings', JSON.stringify({
+          groqModel: 'llama-3.1-8b-instant'
+        }));
+        assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model Groq yang dihentikan diperbarui');
+        localStorage.removeItem('arsipbelajar_settings');
+        assertEqual(storage.getSettings().groqModel, 'openai/gpt-oss-20b', 'model bawaan untuk pengaturan baru');
+      } finally {
+        if (previous === null) localStorage.removeItem('arsipbelajar_settings');
+        else localStorage.setItem('arsipbelajar_settings', previous);
+      }
+    });
+
+    it('storage: migrasi mempertahankan tema, nama, dan riwayat chat lama', () => {
+      const keys = [
+        'belajaryuk_theme', 'arsipbelajar_theme',
+        'belajaryuk_nama', 'arsipbelajar_nama',
+        'belajaryuk_material_chat_migration_test', 'arsipbelajar_material_chat_migration_test'
+      ];
+      const previous = new Map(keys.map(key => [key, localStorage.getItem(key)]));
+      try {
+        keys.forEach(key => localStorage.removeItem(key));
+        localStorage.setItem('belajaryuk_theme', 'dark');
+        localStorage.setItem('belajaryuk_nama', 'Rani');
+        localStorage.setItem('belajaryuk_material_chat_migration_test', '[{"role":"user","content":"materi"}]');
+        localStorage.setItem('arsipbelajar_theme', 'light');
+
+        assertEqual(migrateLegacyLocalStorage(), true, 'migrasi awalan lama berhasil');
+        assertEqual(localStorage.getItem('arsipbelajar_theme'), 'light', 'nilai baru yang ada tidak ditimpa');
+        assertEqual(localStorage.getItem('arsipbelajar_nama'), 'Rani', 'nama lama dipertahankan');
+        assertEqual(localStorage.getItem('arsipbelajar_material_chat_migration_test'), '[{"role":"user","content":"materi"}]', 'riwayat chat lama dipertahankan');
+        assertEqual(localStorage.getItem('belajaryuk_theme'), null, 'key tema lama dibersihkan');
+        assertEqual(localStorage.getItem('belajaryuk_nama'), null, 'key nama lama dibersihkan');
+        assertEqual(localStorage.getItem('belajaryuk_material_chat_migration_test'), null, 'key chat lama dibersihkan');
+      } finally {
+        keys.forEach(key => {
+          const value = previous.get(key);
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        });
+      }
+    });
+
+    it('nama: validasi, sanitasi, penyimpanan, dan instruksi AI memakai satu nama', () => {
+      const previousName = localStorage.getItem('arsipbelajar_nama');
+      try {
+        assertEqual(sanitizeUserName('<b>Budi</b>\u0000').value, 'Budi', 'tag HTML dan karakter kontrol dibuang');
+        assertEqual(sanitizeUserName('A'.repeat(31)).valid, false, 'nama lebih dari 30 karakter ditolak');
+        assertEqual(sanitizeUserName('Budi_1').valid, false, 'karakter di luar daftar ditolak');
+        assert(saveUserName('Rina Putri').valid, 'nama valid tersimpan');
+        assertEqual(localStorage.getItem('arsipbelajar_nama'), 'Rina Putri', 'nama memakai key yang disepakati');
+        assertEqual(getUserNameInstruction(), 'Nama pengguna: "Rina Putri". Sapa dengan namanya sesekali saja secara natural (misalnya di sapaan awal atau saat memberi semangat), jangan di setiap kalimat.', 'nama dipisahkan sebagai data pada instruksi AI');
+        assert(prompts.buildSystemInstruction().includes(getUserNameInstruction()), 'prompt pembuatan materi menyertakan nama');
+        skipNameOnboarding();
+        assertEqual(getNameOnboardingStatus().skipped, true, 'melewati onboarding menyimpan penanda');
+        assertEqual(getUserNameInstruction(), '', 'nama yang dilewati tidak masuk prompt');
+      } finally {
+        if (previousName === null) localStorage.removeItem('arsipbelajar_nama');
+        else localStorage.setItem('arsipbelajar_nama', previousName);
+      }
+    });
+
+    it('nama: tetap dapat dipakai ketika localStorage tidak tersedia', () => {
+      const previousName = localStorage.getItem('arsipbelajar_nama');
+      const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+      try {
+        Object.defineProperty(window, 'localStorage', {
+          configurable: true,
+          value: {
+            getItem() { throw new Error('Storage disabled'); },
+            setItem() { throw new Error('Storage disabled'); }
+          }
+        });
+        assert(saveUserName('Mira').valid, 'nama tetap diterima dalam memori');
+        assertEqual(getUserName(), 'Mira', 'nama tersedia selama sesi berjalan');
+      } finally {
+        if (descriptor) Object.defineProperty(window, 'localStorage', descriptor);
+        else delete window.localStorage;
+        if (previousName === null) localStorage.removeItem('arsipbelajar_nama');
+        else localStorage.setItem('arsipbelajar_nama', previousName);
+      }
+    });
+
+    it('nama: modal onboarding, Lewati dengan Escape, ubah dan hapus nama berfungsi', () => {
+      const previousName = localStorage.getItem('arsipbelajar_nama');
+      const container = document.createElement('div');
+      try {
+        localStorage.removeItem('arsipbelajar_nama');
+        document.body.append(container);
+        const onboarding = mountNameOnboarding(container);
+        const dialog = container.querySelector('dialog');
+        const input = container.querySelector('#name-onboarding-input');
+        assert(dialog.open, 'onboarding muncul ketika belum ada nama atau status Lewati');
+        assertEqual(document.activeElement, input, 'fokus awal berada di input nama');
+        dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+        assertEqual(dialog.open, false, 'Escape menutup modal');
+        assertEqual(localStorage.getItem('arsipbelajar_nama'), 'skipped', 'Escape menyimpan penanda Lewati');
+
+        container.querySelector('.user-greeting-actions button').click();
+        assert(dialog.open, 'tombol ubah membuka modal yang sama');
+        input.value = 'Sari';
+        container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        assertEqual(container.querySelector('.user-greeting-title').textContent, 'Halo, Sari!', 'nama disapa melalui textContent');
+
+        container.querySelector('.user-greeting-actions button').click();
+        assertEqual(input.value, 'Sari', 'modal ubah terisi nama yang tersimpan');
+        dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+        assertEqual(getUserName(), 'Sari', 'Escape saat mengubah tidak menghapus nama');
+        container.querySelector('.user-greeting-actions button:last-child').click();
+        assertEqual(container.querySelector('.user-greeting-title').textContent, 'Halo, Mahasiswa!', 'nama yang dihapus kembali ke sapaan netral');
+        assertEqual(getNameOnboardingStatus().skipped, true, 'hapus nama tidak memunculkan onboarding lagi');
+        onboarding.destroy();
+      } finally {
+        if (previousName === null) localStorage.removeItem('arsipbelajar_nama');
+        else localStorage.setItem('arsipbelajar_nama', previousName);
+        container.remove();
+      }
     });
 
     it('tutorial: pilihan membuka panel dengan transisi gulir dan zoom gambar berfungsi', async () => {
@@ -215,7 +354,7 @@
       const tiktok = container.querySelector('a[href="https://www.tiktok.com/@nno3el"]');
       assert(tiktok?.querySelector('svg') && tiktok.getAttribute('aria-label') === 'TikTok @nno3el', 'logo TikTok memiliki tautan dan label aksesibel');
       assert(container.querySelector('a[href="https://nnoeel.github.io/"]')?.textContent.trim() === 'Portofolio', 'tombol portofolio membuka alamat yang diberikan');
-      assertEqual(container.querySelector('.settings-about-copyright')?.textContent.trim(), '© 2026 Muhammad Farrel. BelajarYuk dilisensikan di bawah MIT.', 'copyright dan lisensi ditampilkan di Pengaturan');
+      assertEqual(container.querySelector('.settings-about-copyright')?.textContent.trim(), '© 2026 Muhammad Farrel. ArsipBelajar dilisensikan di bawah MIT.', 'copyright dan lisensi ditampilkan di Pengaturan');
       assert(!container.querySelector('a[href="./LICENSE"]'), 'lisensi tidak membuka atau mengunduh berkas dari Pengaturan');
       container.remove();
     });
@@ -237,6 +376,175 @@
       assert(container.textContent.includes('tidak dapat menyimpan paket ini secara permanen'), 'peringatan penyimpanan sementara ditampilkan');
       await storage.deletePackage(pkg.id);
       container.remove();
+    });
+
+    it('material chat: callAI mengirim instruksi dan percakapan hanya ke endpoint Gemini', async () => {
+      const originalFetch = window.fetch;
+      let request;
+      window.fetch = async (url, options) => {
+        request = { url, options, body: JSON.parse(options.body) };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ candidates: [{ content: { parts: [{ text: 'Jawaban.' }] } }] })
+        };
+      };
+      try {
+        const answer = await callAI([
+          { role: 'system', content: 'Aturan tetap.' },
+          { role: 'user', content: 'Pertanyaan awal.' },
+          { role: 'assistant', content: 'Jawaban awal.' },
+          { role: 'user', content: 'Pertanyaan lanjutan.' }
+        ], { apiKey: 'secret-test-key' });
+        assertEqual(answer, 'Jawaban.', 'teks jawaban dibaca');
+        assert(request.url.includes(`${AI_MODEL}:generateContent`), 'model memakai konstanta AI_MODEL');
+        assertEqual(request.options.headers['x-goog-api-key'], 'secret-test-key', 'key dikirim ke header API Gemini');
+        assert(!JSON.stringify(request.body).includes('secret-test-key'), 'key tidak ikut masuk ke body');
+        assertEqual(request.body.systemInstruction.parts[0].text, 'Aturan tetap.', 'instruksi sistem dikirim terpisah');
+        assertEqual(request.body.contents[1].role, 'model', 'jawaban sebelumnya dipetakan sebagai role model');
+        assertEqual(request.body.contents[2].parts[0].text, 'Pertanyaan lanjutan.', 'pesan terbaru dikirim');
+      } finally {
+        window.fetch = originalFetch;
+      }
+    });
+
+    it('material chat: callAI memetakan key, kuota, jaringan, dan respons kosong', async () => {
+      const originalFetch = window.fetch;
+      const cases = [
+        { status: 400, payload: { error: { message: 'API key not valid. Please pass a valid API key.' } }, phrase: 'API key tidak valid' },
+        { status: 403, payload: { error: { message: 'forbidden' } }, phrase: 'API key tidak valid' },
+        { status: 429, payload: { error: { message: 'quota' } }, phrase: 'Kuota' },
+        { status: 200, payload: { candidates: [] }, phrase: 'jawaban kosong' }
+      ];
+      try {
+        let emptyKeyError = '';
+        try {
+          await callAI([{ role: 'user', content: 'Tes' }], { apiKey: '' });
+        } catch (error) {
+          emptyKeyError = error.message;
+        }
+        assert(emptyKeyError.includes('belum diisi'), 'key kosong dijelaskan dengan ramah');
+
+        for (const testCase of cases) {
+          window.fetch = async () => ({
+            ok: testCase.status === 200,
+            status: testCase.status,
+            json: async () => testCase.payload
+          });
+          let message = '';
+          try {
+            await callAI([{ role: 'user', content: 'Tes' }], { apiKey: 'test-key' });
+          } catch (error) {
+            message = error.message;
+          }
+          assert(message.includes(testCase.phrase), `status ${testCase.status} dipetakan ke pesan yang sesuai`);
+        }
+
+        window.fetch = async () => { throw new TypeError('Failed to fetch'); };
+        let networkError = '';
+        try {
+          await callAI([{ role: 'user', content: 'Tes' }], { apiKey: 'test-key' });
+        } catch (error) {
+          networkError = error.message;
+        }
+        assert(networkError.includes('jaringan') && networkError.includes('CORS'), 'jaringan dan kemungkinan CORS dijelaskan');
+      } finally {
+        window.fetch = originalFetch;
+      }
+    });
+
+    it('material chat: materi panjang memilih maksimal empat potongan yang relevan', () => {
+      const words = Array.from({ length: 9000 }, (_, index) => index === 6100 ? 'mitokondria' : 'materi');
+      const selected = selectMaterialContext(words.join(' '), 'Apa fungsi mitokondria?');
+      assert(selected.includes('mitokondria'), 'potongan yang relevan dipilih');
+      assertEqual((selected.match(/\[Potongan materi \d+\]/g) || []).length, 4, 'maksimal empat potongan dikirim');
+      assertEqual(selectMaterialContext('Teks singkat.', 'Apa isinya?'), 'Teks singkat.', 'materi pendek dikirim utuh');
+    });
+
+    it('material chat: key wajib, jawaban aman, riwayat per paket, dan flashcard berfungsi', async () => {
+      const originalFetch = window.fetch;
+      const previousSettings = storage.getSettings();
+      const previousName = localStorage.getItem('arsipbelajar_nama');
+      const container = document.createElement('div');
+      const pkg = {
+        id: 'material_chat_ui_test',
+        title: 'Materi Uji Chat',
+        sources: { text: 'Mitokondria menghasilkan energi.' },
+        flashcards: []
+      };
+      const settingsContainer = document.createElement('div');
+      let flashcardAdded = false;
+      const usedApiKeys = [];
+      const requestBodies = [];
+      try {
+        storage.saveSettings({ provider: 'gemini', geminiApiKey: '', apiKey: '' });
+        window.fetch = async (url, options) => {
+          usedApiKeys.push(options.headers['x-goog-api-key']);
+          requestBodies.push(JSON.parse(options.body));
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ candidates: [{ content: { parts: [{ text: '<img src=x onerror=alert(1)>' }] } }] })
+          };
+        };
+        document.body.append(container);
+        renderMaterialChat(container, pkg, { onFlashcardAdded: () => { flashcardAdded = true; } });
+        storage.saveSettings({ provider: 'groq', geminiApiKey: 'inactive-gemini-key', apiKey: 'inactive-gemini-key' });
+        container.querySelector('.material-chat-actions button').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        assertEqual(usedApiKeys.length, 0, 'key Gemini yang tidak aktif tidak dipakai saat penyedia Pengaturan adalah Groq');
+        assert(container.querySelector('.material-chat-status').textContent.includes('Google Gemini'), 'Tanya Materi meminta penyedia Gemini aktif');
+
+        storage.saveSettings({ provider: 'gemini', geminiApiKey: '', apiKey: '' });
+        container.querySelector('#material-chat-input').value = 'Apa fungsi mitokondria?';
+        container.querySelector('.material-chat-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        assertEqual(container.querySelector('.material-chat-actions a').getAttribute('href'), '#/settings', 'tautan pengaturan menuju halaman Pengaturan yang sama');
+        assert(container.querySelector('.material-chat-status').textContent.includes('Pengaturan'), 'tanpa key diarahkan ke Pengaturan');
+        assertEqual(container.querySelector('#material-chat-api-key'), null, 'Tanya Materi tidak meminta key kedua');
+        assertEqual(container.querySelectorAll('.material-chat-message').length, 0, 'pertanyaan tidak dikirim saat key kosong');
+
+        storage.saveSettings({ provider: 'gemini', geminiApiKey: 'test-chat-key', apiKey: 'test-chat-key' });
+        saveUserName('Dina');
+        document.body.append(settingsContainer);
+        renderSettings(settingsContainer);
+        assertEqual(settingsContainer.querySelector('#setting-api-key').value, 'test-chat-key', 'halaman Pengaturan menampilkan key Gemini yang sama');
+        assert(settingsContainer.textContent.includes('Tanya Materi memakai API key Gemini ini'), 'halaman Pengaturan menjelaskan key yang dipakai Tanya Materi');
+        container.querySelector('#material-chat-input').value = 'Apa fungsi mitokondria?';
+        container.querySelector('.material-chat-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await new Promise(resolve => setTimeout(resolve, 1100));
+        const answer = container.querySelector('.material-chat-message-assistant');
+        assertEqual(usedApiKeys[0], 'test-chat-key', 'Tanya Materi memakai API key yang tersimpan di Pengaturan');
+        assert(requestBodies[0].systemInstruction.parts[0].text.includes('Nama pengguna: "Dina"'), 'request Tanya Materi mendapat nama sebagai data pada system prompt');
+        assertEqual(answer.querySelector('p').textContent, '<img src=x onerror=alert(1)>', 'respons AI dipasang sebagai teks, bukan HTML');
+        assertEqual(answer.querySelectorAll('img').length, 0, 'konten AI tidak membuat elemen HTML');
+        assert(localStorage.getItem('arsipbelajar_material_chat_material_chat_ui_test'), 'riwayat tersimpan per id paket');
+
+        container.querySelector('.material-chat-actions button').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        assertEqual(usedApiKeys[1], 'test-chat-key', 'tes koneksi memakai API key yang sama');
+        assert(requestBodies[1].systemInstruction.parts[0].text.includes('Nama pengguna: "Dina"'), 'tes koneksi juga menyertakan instruksi nama');
+        assert(container.querySelector('.material-chat-status').textContent.includes('berhasil'), 'tes koneksi memberi status berhasil');
+
+        answer.querySelector('.material-chat-flashcard').click();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        assertEqual(pkg.flashcards[0].front, 'Apa fungsi mitokondria?', 'pertanyaan menjadi sisi depan');
+        assertEqual(pkg.flashcards[0].back, '<img src=x onerror=alert(1)>', 'jawaban menjadi sisi belakang');
+        assertEqual(pkg.flashcards[0].tag, 'Tanya Materi', 'tag kartu ditetapkan');
+        assert(flashcardAdded, 'tab Flashcard mendapat notifikasi perubahan');
+
+        Array.from(container.querySelectorAll('.material-chat-actions button'))
+          .find(button => button.textContent === 'Hapus riwayat').click();
+        assertEqual(JSON.parse(localStorage.getItem('arsipbelajar_material_chat_material_chat_ui_test')).length, 0, 'hapus riwayat mengosongkan penyimpanan');
+      } finally {
+        window.fetch = originalFetch;
+        storage.saveSettings(previousSettings);
+        if (previousName === null) localStorage.removeItem('arsipbelajar_nama');
+        else localStorage.setItem('arsipbelajar_nama', previousName);
+        localStorage.removeItem('arsipbelajar_material_chat_material_chat_ui_test');
+        await storage.deletePackage(pkg.id);
+        container.remove();
+        settingsContainer.remove();
+      }
     });
 
     // --- SRS Leitner Tests (T-11) ---

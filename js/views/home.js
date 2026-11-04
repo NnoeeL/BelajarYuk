@@ -6,11 +6,11 @@ export async function renderHome(container) {
   let packages = await getAllPackages();
 
   // If first time launch and DB is empty, auto-populate with demo packages
-  if (packages.length === 0 && !localStorage.getItem('belajaryuk_initial_seeded')) {
+  if (packages.length === 0 && !localStorage.getItem('arsipbelajar_initial_seeded')) {
     for (const p of MOCK_PACKAGES) {
       await savePackage(p);
     }
-    localStorage.setItem('belajaryuk_initial_seeded', '1');
+    localStorage.setItem('arsipbelajar_initial_seeded', '1');
     packages = await getAllPackages();
   }
 
@@ -20,8 +20,8 @@ export async function renderHome(container) {
         <header class="view-header">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
             <div>
-              <div class="badge" style="margin-bottom:8px;">✨ Belajar Mandiri Berbasis AI</div>
-              <h1 class="view-title">Halo, Mahasiswa! 👋</h1>
+              <div class="badge" style="margin-bottom:8px;">Belajar Mandiri Berbasis AI</div>
+              <h1 class="view-title">Paket belajarmu</h1>
               <p class="view-subtitle">Kelola dan pelajari materi kuliahmu dalam ringkasan, flashcard, dan kuis.</p>
             </div>
             ${packages.length > 0 ? `
@@ -67,10 +67,10 @@ export async function renderHome(container) {
               <h2 class="card-title">${escapeHtml(pkg.title)}</h2>
             </div>
             <div class="card-meta">
-              <span class="badge badge-blue">🗂️ ${pkg.flashcards?.length || 0} Flashcard</span>
-              <span class="badge badge-green">🎯 ${pkg.quiz?.length || 0} Soal Kuis</span>
-              ${pkg.summary?.bullets?.length ? `<span class="badge" style="background:var(--pastel-sky); color:var(--pastel-sky-text); border:1px solid var(--pastel-sky-border);">📑 Ringkasan</span>` : ''}
-              ${pkg.sources?.youtube?.length ? `<span class="badge" style="background:var(--pastel-coral); color:var(--pastel-coral-text); border:1px solid var(--pastel-coral-border);">📹 ${pkg.sources.youtube.length} Video</span>` : ''}
+              <span class="badge badge-blue">${pkg.flashcards?.length || 0} Flashcard</span>
+              <span class="badge badge-green">${pkg.quiz?.length || 0} Soal Kuis</span>
+              ${pkg.summary?.bullets?.length ? `<span class="badge" style="background:var(--pastel-sky); color:var(--pastel-sky-text); border:1px solid var(--pastel-sky-border);">Ringkasan</span>` : ''}
+              ${pkg.sources?.youtube?.length ? `<span class="badge" style="background:var(--pastel-coral); color:var(--pastel-coral-text); border:1px solid var(--pastel-coral-border);">${pkg.sources.youtube.length} Video</span>` : ''}
             </div>
             <div class="card-actions">
               <button class="btn btn-danger btn-sm btn-delete-pkg" data-id="${pkg.id}" aria-label="Hapus paket ${escapeHtml(pkg.title)}">Hapus</button>
@@ -115,4 +115,3 @@ export async function renderHome(container) {
 
   render();
 }
-

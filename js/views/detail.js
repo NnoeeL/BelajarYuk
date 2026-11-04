@@ -1,6 +1,7 @@
 // View: Detail Paket Belajar (Tab Ringkasan, Flashcard, Kuis dari IndexedDB)
 import { getPackageById, getAllPackages, exportFlashcardsCsv, downloadBlob } from '../storage.js';
 import { MOCK_PACKAGES } from '../mock-data.js';
+import { renderMaterialChat } from './material-chat.js';
 
 export async function renderDetail(container, params = {}) {
   let pkg = params.id ? await getPackageById(params.id) : null;
@@ -12,8 +13,11 @@ export async function renderDetail(container, params = {}) {
   }
 
   let activeTab = 'summary';
+  let destroyMaterialChat = null;
 
   function render() {
+    destroyMaterialChat?.();
+    destroyMaterialChat = null;
     container.innerHTML = `
       <div class="view-container">
         <header class="view-header">
@@ -23,7 +27,7 @@ export async function renderDetail(container, params = {}) {
           <div class="card-meta">
             <span>Dibuat: ${new Date(pkg.createdAt).toLocaleDateString('id-ID', { dateStyle: 'medium' })}</span>
             <span>Bahasa: ${pkg.language.toUpperCase()}</span>
-            ${pkg.sources?.youtube?.length ? `<span class="badge">📹 ${pkg.sources.youtube.length} Video</span>` : ''}
+            ${pkg.sources?.youtube?.length ? `<span class="badge">${pkg.sources.youtube.length} Video</span>` : ''}
           </div>
           <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
             <a href="#/flashcards?id=${encodeURIComponent(pkg.id)}" class="btn btn-primary btn-sm">Mulai Flashcard</a>
@@ -35,17 +39,27 @@ export async function renderDetail(container, params = {}) {
           <button class="tab-btn ${activeTab === 'summary' ? 'active' : ''}" data-tab="summary">Ringkasan</button>
           <button class="tab-btn ${activeTab === 'flashcards' ? 'active' : ''}" data-tab="flashcards">Flashcard (${pkg.flashcards?.length || 0})</button>
           <button class="tab-btn ${activeTab === 'quiz' ? 'active' : ''}" data-tab="quiz">Kuis (${pkg.quiz?.length || 0})</button>
+          <button class="tab-btn ${activeTab === 'chat' ? 'active' : ''}" data-tab="chat">Tanya Materi</button>
         </nav>
 
         <div class="tab-content">
           ${activeTab === 'summary' ? renderSummaryTab() : ''}
           ${activeTab === 'flashcards' ? renderFlashcardsTab() : ''}
           ${activeTab === 'quiz' ? renderQuizTab() : ''}
+          ${activeTab === 'chat' ? '<div id="material-chat-root"></div>' : ''}
         </div>
       </div>
     `;
 
     attachEvents();
+    if (activeTab === 'chat') {
+      destroyMaterialChat = renderMaterialChat(container.querySelector('#material-chat-root'), pkg, {
+        onFlashcardAdded: () => {
+          const flashcardsTab = container.querySelector('.tab-btn[data-tab="flashcards"]');
+          if (flashcardsTab) flashcardsTab.textContent = `Flashcard (${pkg.flashcards?.length || 0})`;
+        }
+      });
+    }
   }
 
   function renderSummaryTab() {
@@ -79,7 +93,7 @@ export async function renderDetail(container, params = {}) {
             ${s.videoMoments.map(m => `
               <div class="term-card">
                 <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="badge" style="background:var(--pastel-sky); color:var(--pastel-sky-text); border:1px solid var(--pastel-sky-border);">⏱️ Menit ${escapeHtml(m.approxTime)}</span>
+                  <span class="badge" style="background:var(--pastel-sky); color:var(--pastel-sky-text); border:1px solid var(--pastel-sky-border);">Menit ${escapeHtml(m.approxTime)}</span>
                   <span class="badge" style="background:var(--pastel-honey); color:var(--pastel-honey-text); border:1px solid var(--pastel-honey-border);">(perkiraan)</span>
                 </div>
                 <p class="term-desc" style="margin-top:4px;">${escapeHtml(m.note)}</p>
@@ -101,7 +115,7 @@ export async function renderDetail(container, params = {}) {
             <p class="form-hint">Total ${cards.length} kartu hafalan.</p>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button type="button" id="btn-export-csv" class="btn btn-secondary btn-sm">📄 Ekspor CSV (Anki)</button>
+            <button type="button" id="btn-export-csv" class="btn btn-secondary btn-sm">Ekspor CSV (Anki)</button>
             <a href="#/flashcards?id=${encodeURIComponent(pkg.id)}" class="btn btn-primary btn-sm">Mulai Sesi Belajar &rarr;</a>
           </div>
         </div>

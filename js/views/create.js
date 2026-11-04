@@ -42,7 +42,7 @@ export function renderCreate(container) {
                 </div>
               `).join('')}
             </div>
-            <div id="duration-warning" class="alert alert-warning" style="display:none;">⚠️ Durasi >90 menit. Pertimbangkan video yang lebih ringkas.</div>
+            <div id="duration-warning" class="alert alert-warning" style="display:none;">Durasi lebih dari 90 menit. Pertimbangkan video yang lebih ringkas.</div>
           </div>
 
           <div class="form-group">
@@ -56,7 +56,7 @@ export function renderCreate(container) {
 
           <div style="margin-top:4px;">
             <button type="submit" id="btn-submit-create" class="btn btn-primary btn-block" ${isGenerating ? 'disabled' : ''}>
-              ${isGenerating ? '⏳ Memproses materi dengan AI...' : 'Buat Paket Belajar'}
+              ${isGenerating ? 'Memproses materi dengan AI...' : 'Buat Paket Belajar'}
             </button>
           </div>
         </form>
@@ -156,7 +156,7 @@ export function renderCreate(container) {
         const extractedFiles = await extractSelectedFiles(files, updateStatus);
         text = text ? `${text}\n\n${extractedFiles.text}` : extractedFiles.text;
         if (text.length > 200000) {
-          updateStatus('⚠️ Materi >200.000 karakter, memotong otomatis...');
+          updateStatus('Materi lebih dari 200.000 karakter, memotong otomatis...');
           text = text.slice(0, 200000);
         }
         updateStatus('Mengirim ke AI...');

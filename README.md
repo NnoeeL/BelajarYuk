@@ -1,6 +1,6 @@
-# BelajarYuk
+# ArsipBelajar
 
-BelajarYuk adalah aplikasi belajar berbasis web yang membantu mengubah materi menjadi ringkasan, flashcard, dan kuis. Aplikasi dibuat dengan HTML, CSS, dan JavaScript tanpa proses build atau backend sendiri.
+ArsipBelajar adalah aplikasi belajar berbasis web yang membantu mengubah materi menjadi ringkasan, flashcard, dan kuis. Aplikasi dibuat dengan HTML, CSS, dan JavaScript tanpa proses build atau backend sendiri.
 
 ![Tampilan form Buat Paket Belajar](./assets/tutorial/app-create.png)
 
@@ -10,6 +10,8 @@ BelajarYuk adalah aplikasi belajar berbasis web yang membantu mengubah materi me
 - Unggah maksimal lima berkas dan tambahkan maksimal tiga tautan YouTube untuk satu paket. Format Word lama `.doc` belum didukung.
 - Pilih hasil yang ingin dibuat: ringkasan, flashcard, dan/atau kuis.
 - Gunakan flashcard dengan pengulangan terjadwal berbasis sistem Leitner.
+- Tanya Materi untuk bertanya tentang isi paket aktif, lalu simpan jawaban sebagai flashcard.
+- Simpan nama panggilan di browser untuk sapaan dan personalisasi instruksi AI.
 - Atur jumlah soal kuis dan pilih tanpa timer, timer total dalam menit, atau timer per soal dalam detik.
 - Pilih Google Gemini atau Groq sebagai penyedia AI.
 - Coba aplikasi dengan Mode Demo tanpa API key; hasilnya menggunakan data contoh.
@@ -35,7 +37,7 @@ Aplikasi menggunakan JavaScript ES Modules, jadi jalankan melalui web server lok
 
 ## Menyiapkan AI
 
-Untuk membuat materi dengan AI, diperlukan koneksi internet dan API key dari penyedia yang dipilih. BelajarYuk tidak menyertakan API key bersama aplikasi.
+Untuk membuat materi dengan AI, diperlukan koneksi internet dan API key dari penyedia yang dipilih. ArsipBelajar tidak menyertakan API key bersama aplikasi.
 
 1. Buat key melalui [Google AI Studio](https://aistudio.google.com/apikey) atau [Groq Console](https://console.groq.com/keys).
 2. Buka menu **Pengaturan**, pilih penyedia, tempel API key, lalu tekan **Simpan Pengaturan**.
@@ -48,15 +50,35 @@ Mode Demo dapat diaktifkan dari Pengaturan tanpa key, tetapi menghasilkan paket 
 ## Alur belajar
 
 1. Buat paket dari teks, berkas, atau tautan yang didukung.
-2. Buka paket untuk membaca ringkasan, istilah penting, serta materi yang dihasilkan.
+2. Buka paket untuk membaca ringkasan, istilah penting, serta materi yang dihasilkan. Tab **Tanya Materi** menjawab berdasarkan teks sumber paket dan menyimpan riwayat secara terpisah per paket.
 3. Gunakan **Flashcard** untuk mengingat materi. Jawab apakah kamu sudah mengingat kartu agar jadwal pengulangan diperbarui.
 4. Pilih **Kuis** untuk menentukan jumlah soal dan pengaturan timer sebelum mulai.
 5. Ekspor paket secara berkala sebagai cadangan.
 
+### Nama panggilan
+
+Saat pertama membuka situs, kamu bisa mengisi nama panggilan atau melewati langkah tersebut. Nama dapat diubah atau dihapus dari header aplikasi. Nama hanya disimpan di browser ini dan ditambahkan ke instruksi sistem AI sebagai data, bukan sebagai instruksi.
+
+### Tanya Materi
+
+Tanya Materi memakai API key Gemini yang sama dengan halaman **Pengaturan**, jadi key cukup dimasukkan sekali di sana dengan penyedia **Google Gemini**. Tombol **Pengaturan AI** pada tab Tanya Materi membuka halaman tersebut, sedangkan **Tes koneksi** memakai key yang sudah tersimpan. Key disimpan di localStorage browser ini dan dikirim langsung ke Gemini saat bertanya. Percakapan tidak disimpan di server ArsipBelajar. Materi hingga sekitar 8.000 kata dikirim utuh; materi yang lebih panjang dipilih menjadi empat potongan relevan (sekitar 400 kata per potongan dengan overlap 50 kata). Jawaban AI dapat ditambahkan ke paket sebagai flashcard.
+
+Tes manual:
+
+1. Tanpa key: buka Tanya Materi dan kirim pertanyaan; ajakan mengatur key harus muncul.
+2. Key salah: tes koneksi atau kirim pertanyaan; pesan harus menjelaskan key tidak valid dan menyediakan **Coba lagi**.
+3. Pertanyaan yang jawabannya ada di materi: jawaban harus singkat dan menyertakan kutipan materi.
+4. Pertanyaan yang tidak ada di materi: jawaban harus menyatakan “Tidak ditemukan di materi”.
+5. Pertanyaan lanjutan: tanyakan istilah di jawaban sebelumnya untuk memastikan konteks percakapan terbawa.
+6. Materi lebih dari 8.000 kata: tanyakan konsep yang berada jauh di dalam materi dan pastikan jawaban mengambil potongan yang relevan.
+7. Jaringan mati: kirim pertanyaan; pesan jaringan/CORS dan tombol **Coba lagi** harus tersedia.
+
 ## Penyimpanan dan privasi
 
 - Paket belajar disimpan di IndexedDB pada browser dan perangkat yang sedang digunakan. Pengaturan, termasuk API key, disimpan di penyimpanan lokal browser.
-- Data tidak disimpan di server BelajarYuk dan tidak disinkronkan otomatis ke perangkat lain.
+- Saat pertama dibuka setelah rebranding, kunci localStorage berawalan `belajaryuk_` dipindahkan ke `arsipbelajar_`. Nama database IndexedDB tetap dipakai agar paket belajar lama tidak hilang.
+- Riwayat Tanya Materi disimpan di localStorage secara terpisah untuk setiap paket.
+- Data tidak disimpan di server ArsipBelajar dan tidak disinkronkan otomatis ke perangkat lain.
 - Data situs dapat hilang jika penyimpanan browser dihapus, mode privat digunakan, atau penyimpanan browser tidak tersedia. Dalam kondisi tertentu, aplikasi memberi tahu bahwa paket hanya tersimpan sementara.
 - Saat membuat paket, materi dan API key dikirim langsung dari browser ke penyedia AI yang dipilih. Gunakan API key sendiri dan jaga kerahasiaannya, terutama saat menggunakan perangkat bersama.
 - Untuk mencadangkan materi, buka **Pengaturan → Cadangan & Ekspor Data** dan pilih **Unduh Semua Paket (JSON)**. Gunakan fitur impor untuk memulihkan cadangan.
@@ -75,7 +97,7 @@ Jalankan server lokal seperti dijelaskan di atas, lalu buka [http://localhost:80
 
 ## Publikasi
 
-BelajarYuk dapat dipublikasikan sebagai situs statis, misalnya melalui GitHub Pages:
+ArsipBelajar dapat dipublikasikan sebagai situs statis, misalnya melalui GitHub Pages:
 
 1. Unggah isi proyek ke repository GitHub.
 2. Buka **Settings → Pages**.
@@ -94,4 +116,4 @@ Situs yang dipublikasikan tidak otomatis memiliki API key untuk pengunjung. Seti
 
 ## Lisensi
 
-BelajarYuk menggunakan lisensi MIT. Teks lengkap lisensi tersedia di [LICENSE](./LICENSE).
+ArsipBelajar menggunakan lisensi MIT. Teks lengkap lisensi tersedia di [LICENSE](./LICENSE).

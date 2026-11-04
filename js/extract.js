@@ -1,4 +1,4 @@
-// BelajarYuk - Text Extraction (TXT/MD, PDF via pdf.js, DOCX via Mammoth)
+// ArsipBelajar - Text Extraction (TXT/MD, PDF via pdf.js, DOCX via Mammoth)
 
 const PDF_JS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';

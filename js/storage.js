@@ -1,5 +1,6 @@
-// BelajarYuk - Storage (IndexedDB for Packages, localStorage for Settings)
+// ArsipBelajar - Storage (IndexedDB for Packages, localStorage for Settings)
 
+// Keep the database name so existing IndexedDB packages remain available after rebranding.
 const DB_NAME = 'belajaryuk_db';
 const DB_VERSION = 1;
 const STORE_PACKAGES = 'packages';
@@ -116,7 +117,7 @@ export async function deletePackage(id) {
 }
 
 // --- localStorage for Settings ---
-const SETTINGS_KEY = 'belajaryuk_settings';
+const SETTINGS_KEY = 'arsipbelajar_settings';
 const DEFAULT_SETTINGS = {
   provider: 'gemini',
   apiKey: '',

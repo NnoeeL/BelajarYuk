@@ -1,26 +1,34 @@
-// BelajarYuk - Service Worker (Offline Support & PWA)
+// ArsipBelajar - Service Worker (Offline Support & PWA)
 
-const CACHE_NAME = 'belajaryuk-v21';
+const CACHE_NAME = 'arsipbelajar-v25';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './assets/arsipbelajar-logo.svg',
+  './assets/arsipbelajar-icon.svg',
+  './assets/arsipbelajar-icon.png',
   './LICENSE',
   './css/base.css',
   './css/components.css',
   './js/app.js',
   './js/state.js',
   './js/storage.js',
+  './js/storage-migration.js',
   './js/srs.js',
   './js/mock-data.js',
   './js/prompts.js',
   './js/extract.js',
   './js/gemini.js',
+  './js/material-chat-ai.js',
+  './js/user-profile.js',
+  './js/name-onboarding.js',
   './js/views/home.js',
   './js/views/create.js',
   './js/views/file-upload.js',
   './js/views/detail.js',
+  './js/views/material-chat.js',
   './js/views/flashcards.js',
   './js/views/quiz.js',
   './js/views/quiz-setup.js',

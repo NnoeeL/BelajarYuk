@@ -1,4 +1,4 @@
-// BelajarYuk - Gemini and Groq API Clients (Single AI Network Boundary)
+// ArsipBelajar - Gemini and Groq API Clients (Single AI Network Boundary)
 import { LEARNING_PACKAGE_SCHEMA, MIN_QUIZ_QUESTIONS, buildGroqResponseSchema, buildSystemInstruction, buildUserPrompt } from './prompts.js';
 import { MOCK_PACKAGES } from './mock-data.js';
 

@@ -1,74 +1,79 @@
-/* BelajarYuk - Base CSS (Anime Pastel Seaside Theme by Noel) */
+/* ArsipBelajar palette: navy carries hierarchy, sky blue marks focus, yellow marks important states. */
 :root {
-  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --bg: #f0f8ff;
-  --bg-gradient: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 22%, #f0fdfa 48%, #fef9c3 82%, #fef08a 100%);
-  --surface: rgba(255, 255, 255, 0.85);
-  --surface-hover: rgba(255, 255, 255, 0.95);
-  --text: #0f172a;
-  --text-muted: #334155;
-  --border: rgba(186, 230, 253, 0.85);
+  --font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bg: #f1f5f9;
+  --bg-gradient: none;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --text: #0c4a6e;
+  --text-muted: #0369a1;
+  --border: #cbd5e1;
 
-  /* Seaside Pastel Tokens */
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: rgba(224, 242, 254, 0.85);
-  --primary-border: #7dd3fc;
+  --primary: #0369a1;
+  --primary-hover: #0c4a6e;
+  --accent: #38bdf8;
+  --sky-dark: #0284c7;
+  --primary-light: #e0f2fe;
+  --primary-border: var(--accent);
 
   --pastel-sky: #e0f2fe;
-  --pastel-sky-text: #0369a1;
-  --pastel-sky-border: #bae6fd;
-
-  --pastel-pink: #fce7f3;
-  --pastel-pink-text: #be185d;
-  --pastel-pink-border: #fbcfe8;
-
-  --pastel-mint: #ccfbf1;
-  --pastel-mint-text: #0f766e;
-  --pastel-mint-border: #99f6e4;
-
+  --pastel-sky-text: #0c4a6e;
+  --pastel-sky-border: #7dd3fc;
+  --pastel-pink: #fef2f2;
+  --pastel-pink-text: #991b1b;
+  --pastel-pink-border: #fecaca;
+  --pastel-mint: #f0f9ff;
+  --pastel-mint-text: #0c4a6e;
+  --pastel-mint-border: #bae6fd;
   --pastel-sand: #fef3c7;
-  --pastel-sand-text: #92400e;
-  --pastel-sand-border: #fde68a;
+  --pastel-sand-text: #78350f;
+  --pastel-sand-border: #fbbf24;
+  --pastel-lavender: #e0f2fe;
+  --pastel-lavender-text: #0c4a6e;
+  --pastel-lavender-border: #7dd3fc;
 
-  --pastel-lavender: #ede9fe;
-  --pastel-lavender-text: #6d28d9;
-  --pastel-lavender-border: #ddd6fe;
-
-  --danger: #f43f5e;
-  --danger-light: #fff1f2;
-  --success: #10b981;
-  --success-light: #f0fdfa;
-  --warning: #f59e0b;
+  --danger: #b91c1c;
+  --danger-light: #fef2f2;
+  --success: #166534;
+  --success-light: #f0fdf4;
+  --warning: #92400e;
   --warning-light: #fffbeb;
 
   --radius-sm: 10px;
   --radius: 18px;
   --radius-lg: 22px;
 
-  --shadow-sm: 0 2px 8px rgba(14, 165, 233, 0.08);
-  --shadow: 0 12px 32px -6px rgba(14, 165, 233, 0.14);
-  --shadow-lg: 0 20px 42px -8px rgba(2, 132, 199, 0.22);
+  --shadow-sm: 0 2px 8px rgba(12, 74, 110, 0.08);
+  --shadow: 0 12px 32px -6px rgba(12, 74, 110, 0.12);
+  --shadow-lg: 0 20px 42px -8px rgba(12, 74, 110, 0.18);
   --min-touch-target: 48px;
 }
 
 :root[data-theme="dark"] {
-  --bg: #091124;
-  --bg-gradient: linear-gradient(180deg, #0f172a 0%, #0c2340 35%, #064e3b33 70%, #1e1b4b 100%);
-  --surface: rgba(15, 23, 42, 0.88);
-  --surface-hover: rgba(30, 41, 59, 0.95);
+  --bg: #081b2a;
+  --bg-gradient: none;
+  --surface: #102a3a;
+  --surface-hover: #15384b;
   --text: #f8fafc;
-  --text-muted: #94a3b8;
-  --border: rgba(56, 189, 248, 0.25);
-  --primary: #38bdf8;
-  --primary-hover: #7dd3fc;
-  --primary-light: rgba(14, 165, 233, 0.2);
+  --text-muted: #bae6fd;
+  --border: rgba(125, 211, 252, 0.25);
+  --primary: #7dd3fc;
+  --primary-hover: #bae6fd;
+  --accent: #38bdf8;
+  --sky-dark: #0284c7;
+  --primary-light: rgba(56, 189, 248, 0.16);
   --primary-border: #0284c7;
-  --pastel-sky: #082f49; --pastel-sky-text: #7dd3fc; --pastel-sky-border: #0284c7;
-  --pastel-pink: #831843; --pastel-pink-text: #f472b6; --pastel-pink-border: #be185d;
-  --pastel-mint: #134e4a; --pastel-mint-text: #5eead4; --pastel-mint-border: #0f766e;
-  --pastel-sand: #78350f; --pastel-sand-text: #fcd34d; --pastel-sand-border: #b45309;
-  --pastel-lavender: #3b1669; --pastel-lavender-text: #c084fc; --pastel-lavender-border: #6b21a8;
+  --pastel-sky: #12384d; --pastel-sky-text: #bae6fd; --pastel-sky-border: #0284c7;
+  --pastel-pink: #451a1a; --pastel-pink-text: #fecaca; --pastel-pink-border: #b91c1c;
+  --pastel-mint: #12384d; --pastel-mint-text: #bae6fd; --pastel-mint-border: #0284c7;
+  --pastel-sand: #422006; --pastel-sand-text: #fde68a; --pastel-sand-border: #a16207;
+  --pastel-lavender: #12384d; --pastel-lavender-text: #bae6fd; --pastel-lavender-border: #0284c7;
+  --danger: #f87171;
+  --danger-light: #451a1a;
+  --success: #86efac;
+  --success-light: #12351f;
+  --warning: #fbbf24;
+  --warning-light: #422006;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 20px 42px rgba(0, 0, 0, 0.65);
@@ -95,7 +100,7 @@ button { cursor: pointer; border: none; background: none; min-height: var(--min-
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* --- Anime Pastel Seaside Background Scenery --- */
-.seaside-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.seaside-bg { display: none; }
 #app { position: relative; z-index: 1; }
 
 /* Seaside Warm Sun & Halo */

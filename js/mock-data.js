@@ -1,4 +1,4 @@
-// BelajarYuk - Mock Data (Fase 1 & Mode Demo)
+// ArsipBelajar - Mock Data (Fase 1 & Mode Demo)
 export const MOCK_PACKAGES = [
   {
     id: "pkg_20261102_001",

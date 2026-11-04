@@ -1,4 +1,4 @@
-// BelajarYuk - Leitner 5-Box Spaced Repetition System (SRS)
+// ArsipBelajar - Leitner 5-Box Spaced Repetition System (SRS)
 
 export const BOX_INTERVALS_DAYS = {
   1: 1,

@@ -34,7 +34,7 @@ export function renderSettings(container) {
           keyLink: 'Google AI Studio',
           model: DEFAULT_GEMINI_MODEL,
           modelHint: `Bawaan: ${DEFAULT_GEMINI_MODEL}. Model dapat diubah sewaktu-waktu.`,
-          capability: 'Gemini dapat memproses materi teks, dokumen, dan link video YouTube.'
+          capability: 'Tanya Materi memakai API key Gemini ini. Gemini juga dapat memproses teks, dokumen, dan link video YouTube.'
         };
   }
 
@@ -52,14 +52,14 @@ export function renderSettings(container) {
 
         <section class="section-box settings-storage-note" aria-labelledby="settings-storage-title">
           <h2 id="settings-storage-title" class="section-title">Penyimpanan di perangkat</h2>
-          <p>Materi dan API key dikirim langsung ke penyedia AI yang kamu pilih. Paket belajar disimpan di browser perangkat ini, bukan di cloud BelajarYuk, dan tidak otomatis tersinkron ke perangkat lain.</p>
+          <p>Materi dan API key dikirim langsung ke penyedia AI yang kamu pilih. Paket belajar disimpan di browser perangkat ini, bukan di cloud ArsipBelajar, dan tidak otomatis tersinkron ke perangkat lain.</p>
           <p>Data browser bisa hilang jika data situs dihapus, kamu memakai mode privat, atau penyimpanan browser bermasalah. Unduh cadangan JSON secara berkala di bagian Cadangan & Ekspor Data.</p>
         </section>
 
         <section class="section-box settings-gemini-recommendation" aria-labelledby="settings-gemini-title">
           <div>
             <h2 id="settings-gemini-title" class="section-title">Rekomendasi untuk mulai: Gemini</h2>
-            <p>Gemini mendukung teks, dokumen, dan link video YouTube. Tutorial bergambarnya juga tersedia di BelajarYuk. Groq tetap bisa dipilih untuk materi teks dan dokumen.</p>
+            <p>Gemini mendukung teks, dokumen, dan link video YouTube. Tutorial bergambarnya juga tersedia di ArsipBelajar. Groq tetap bisa dipilih untuk materi teks dan dokumen.</p>
           </div>
           <div class="settings-gemini-actions">
             <a class="btn btn-primary btn-sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Buat Gemini API key</a>
@@ -130,9 +130,9 @@ export function renderSettings(container) {
           <div class="form-group">
             <label for="setting-theme" class="form-label">Tema Tampilan</label>
             <select id="setting-theme" class="form-select">
-              <option value="system" ${localStorage.getItem('belajaryuk_theme') === 'system' ? 'selected' : ''}>Ikuti Sistem</option>
-              <option value="light" ${localStorage.getItem('belajaryuk_theme') === 'light' ? 'selected' : ''}>Terang (Light)</option>
-              <option value="dark" ${localStorage.getItem('belajaryuk_theme') === 'dark' ? 'selected' : ''}>Gelap (Dark)</option>
+              <option value="system" ${localStorage.getItem('arsipbelajar_theme') === 'system' ? 'selected' : ''}>Ikuti Sistem</option>
+              <option value="light" ${localStorage.getItem('arsipbelajar_theme') === 'light' ? 'selected' : ''}>Terang (Light)</option>
+              <option value="dark" ${localStorage.getItem('arsipbelajar_theme') === 'dark' ? 'selected' : ''}>Gelap (Dark)</option>
             </select>
           </div>
 
@@ -146,9 +146,9 @@ export function renderSettings(container) {
           <h2 class="section-title">Cadangan & Ekspor Data</h2>
           <p class="form-hint">Unduh seluruh paket belajarmu dalam format JSON atau pulihkan cadangan sebelumnya. Simpan cadangan di luar browser agar dapat dipulihkan jika data situs terhapus.</p>
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-            <button type="button" id="btn-export-json" class="btn btn-secondary btn-sm">📥 Unduh Semua Paket (JSON)</button>
+            <button type="button" id="btn-export-json" class="btn btn-secondary btn-sm">Unduh Semua Paket (JSON)</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer; margin:0;">
-              📤 Impor Berkas JSON
+              Impor Berkas JSON
               <input type="file" id="file-import-json" accept=".json" style="display:none;">
             </label>
           </div>
@@ -156,8 +156,8 @@ export function renderSettings(container) {
 
         <section class="section-box settings-about" aria-labelledby="settings-about-title">
           <div>
-            <h2 id="settings-about-title" class="section-title">Tentang BelajarYuk</h2>
-            <p>BelajarYuk membantu menyusun materi kuliah menjadi ringkasan, flashcard, dan kuis latihan.</p>
+            <h2 id="settings-about-title" class="section-title">Tentang ArsipBelajar</h2>
+            <p>ArsipBelajar membantu menyusun materi kuliah menjadi ringkasan, flashcard, dan kuis latihan.</p>
           </div>
           <div class="settings-about-developer">
             <span class="form-hint">Dikembangkan oleh</span>
@@ -175,7 +175,7 @@ export function renderSettings(container) {
             </a>
           </div>
           <a class="btn btn-primary btn-sm settings-portfolio-link" href="https://nnoeel.github.io/" target="_blank" rel="noopener noreferrer">Portofolio</a>
-          <p class="settings-about-copyright">© 2026 Muhammad Farrel. BelajarYuk dilisensikan di bawah MIT.</p>
+          <p class="settings-about-copyright">© 2026 Muhammad Farrel. ArsipBelajar dilisensikan di bawah MIT.</p>
         </section>
       </div>
     `;
@@ -229,7 +229,7 @@ export function renderSettings(container) {
         if (el) { el.className = 'alert alert-danger'; el.textContent = 'Pengaturan gagal disimpan. Periksa penyimpanan browser Anda.'; el.style.display = 'flex'; }
         return;
       }
-      localStorage.setItem('belajaryuk_theme', theme);
+      localStorage.setItem('arsipbelajar_theme', theme);
 
       // Apply theme
       if (theme === 'system') {
@@ -246,7 +246,7 @@ export function renderSettings(container) {
     container.querySelector('#btn-export-json')?.addEventListener('click', async () => {
       const json = await exportAllPackagesJson();
       const dateStr = new Date().toISOString().slice(0, 10);
-      downloadBlob(json, `belajaryuk-backup-${dateStr}.json`);
+      downloadBlob(json, `arsipbelajar-backup-${dateStr}.json`);
       showNotice('Semua paket berhasil diunduh sebagai JSON.');
     });
 

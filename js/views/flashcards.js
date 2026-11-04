@@ -67,11 +67,11 @@ export async function renderFlashcards(container, params = {}) {
           <!-- Controls when flipped -->
           ${isFlipped ? `
             <div style="display:flex; gap:12px; justify-content:center;">
-              <button id="btn-forgot" class="btn btn-danger" style="flex:1;">❌ Belum Ingat</button>
-              <button id="btn-remembered" class="btn btn-primary" style="flex:1;">✅ Sudah Ingat</button>
+              <button id="btn-forgot" class="btn btn-danger" style="flex:1;">Belum Ingat</button>
+              <button id="btn-remembered" class="btn btn-primary" style="flex:1;">Sudah Ingat</button>
             </div>
           ` : `
-            <button id="btn-flip" class="btn btn-secondary btn-block">🔄 Ketuk untuk Membalik Kartu</button>
+            <button id="btn-flip" class="btn btn-secondary btn-block">Ketuk untuk Membalik Kartu</button>
           `}
 
           <!-- Quick Navigation -->
@@ -172,4 +172,3 @@ export async function renderFlashcards(container, params = {}) {
 
   render();
 }
-

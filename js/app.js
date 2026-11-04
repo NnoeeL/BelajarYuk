@@ -1,4 +1,4 @@
-// BelajarYuk - Application Bootstrap & Hash Router
+// ArsipBelajar - Application Bootstrap & Hash Router
 import { renderHome } from './views/home.js';
 import { renderCreate } from './views/create.js';
 import { renderDetail } from './views/detail.js';
@@ -6,6 +6,8 @@ import { renderFlashcards } from './views/flashcards.js';
 import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
 import { renderApiTutorial } from './views/api-tutorial.js';
+import { mountNameOnboarding } from './name-onboarding.js';
+import { migrateLegacyLocalStorage } from './storage-migration.js';
 
 // SVG Icons (clean, accessible, zero dependency)
 const ICONS = {
@@ -33,14 +35,8 @@ function renderShell(appEl) {
     <div class="app-layout">
       <nav class="app-nav" aria-label="Navigasi Utama">
         <div class="nav-brand">
-          <a class="nav-brand-link" href="#/" aria-label="BelajarYuk, kembali ke Beranda">
-            <span class="nav-brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5c-2.2-1.6-5.3-1.8-8-1v12c2.7-.8 5.8-.6 8 1 2.2-1.6 5.3-1.8 8-1v-12c-2.7-.8-5.8-.6-8 1Z"/><path d="M12 6.5v12M7 9h2M7 12h2M15 9h2M15 12h2"/></svg>
-            </span>
-            <span class="nav-brand-copy">
-              <strong class="nav-brand-name">BelajarYuk</strong>
-              <span class="nav-brand-tagline">Teman belajar mandiri</span>
-            </span>
+          <a class="nav-brand-link" href="#/" aria-label="ArsipBelajar, kembali ke Beranda">
+            <img class="nav-brand-logo" src="assets/arsipbelajar-logo.svg" alt="ArsipBelajar">
           </a>
         </div>
         <div class="nav-section-label">MENU UTAMA</div>
@@ -80,7 +76,13 @@ function renderShell(appEl) {
           </a>
         </section>
       </nav>
-      <main id="main-content" class="app-main" role="main"></main>
+      <main id="main-content" class="app-main" role="main">
+        <a class="mobile-brand-link" href="#/" aria-label="ArsipBelajar, kembali ke Beranda">
+          <img class="nav-brand-logo" src="assets/arsipbelajar-logo.svg" alt="ArsipBelajar">
+        </a>
+        <div id="name-onboarding-root"></div>
+        <div id="route-content"></div>
+      </main>
     </div>
   `;
 }
@@ -100,7 +102,7 @@ function updateActiveNav(currentRoute) {
 }
 
 function router() {
-  const mainContent = document.getElementById('main-content');
+  const mainContent = document.getElementById('route-content');
   if (!mainContent) return;
 
   const { path, params } = parseHash(window.location.hash);
@@ -141,11 +143,13 @@ function router() {
 }
 
 function init() {
-  const theme = localStorage.getItem('belajaryuk_theme') || 'light';
+  migrateLegacyLocalStorage();
+  const theme = localStorage.getItem('arsipbelajar_theme') || 'light';
   document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
   const appEl = document.getElementById('app');
   if (!appEl) return;
   renderShell(appEl);
+  mountNameOnboarding(document.getElementById('name-onboarding-root'));
   window.addEventListener('hashchange', router);
   router();
 }
